@@ -138,11 +138,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--debug_cec', action='store_true')
 parser.add_argument('--debug_dbus', action='store_true')
 
-mode_group = parser.add_mutually_exclusive_group(required=True)
-mode_group.add_argument('--off', action='store_true')
-mode_group.add_argument('--on', action='store_true')
-mode_group.add_argument('--dbus', action='store_true')
+modes = parser.add_mutually_exclusive_group(required=True)
+modes.add_argument('--off', action='store_true', help='Turn TV off & exit')
+modes.add_argument('--on', action='store_true', help='Turn TV on & exit')
+modes.add_argument('--dbus', action='store_true', help='Wake TV for screen on')
+modes.add_argument('--dbus_test', action='store_true', help='Print dbus, no TV')
 args = parser.parse_args()
+
+if args.dbus_test:
+    listener = ScreenSaverListener(debug=args.debug_dbus)
+    while True:
+        listener.wait_for_signal()
+        power, saver = listener.display_powersave, listener.screensaver_active
+        power = '?' if power is None else 'POWERSAVE' if power else 'ACTIVE'
+        saver = '?' if saver is None else 'ACTIVE' if saver else 'INACTIVE'
+        print(f'--- display={power} screensaver={saver} ---')
 
 controller = CecController(debug=args.debug_cec)
 if args.off:
