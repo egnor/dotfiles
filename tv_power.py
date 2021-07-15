@@ -13,11 +13,12 @@ import time
 
 class ScreenSaverListener:
     def __init__(self, debug=False):
-        dbus_loop = dbus.mainloop.glib.DBusGMainLoop()
         self._debug = debug
-        self._dbus = dbus.SessionBus(mainloop=dbus_loop)
         self._loop = gi.repository.GLib.MainLoop()
+        self._dbus_loop = dbus.mainloop.glib.DBusGMainLoop()
+        self._dbus = dbus.SessionBus(mainloop=self._dbus_loop)
 
+        self.connected = self._dbus.get_is_connected()
         self.screensaver_active = None
         self.display_powersave = None
 
@@ -42,6 +43,9 @@ class ScreenSaverListener:
             bus_name=None,
             path='/org/gnome/ScreenSaver')
 
+        self._dbus.call_on_disconnection(self._on_disconnect)
+        seld._dbus.set_exit_on_disconnect(False)
+
     def _on_screensaver_wakeup(self):
         if self._debug:
             print(f'DBUS ScreenSaver WakeUpScreen', file=sys.stderr)
@@ -62,6 +66,12 @@ class ScreenSaverListener:
         if powersave is not None:
             self.display_powersave = int(powersave)
             self._loop.quit()
+
+    def _on_disconnect(self, dbus):
+        if self._debug:
+            print('DBUS disconnected!')
+        self.connected = False
+        self._loop.quit()
 
     def wait_for_signal(self):
         if self._debug:
@@ -147,7 +157,7 @@ args = parser.parse_args()
 
 if args.dbus_test:
     listener = ScreenSaverListener(debug=args.debug_dbus)
-    while True:
+    while listener.connected:
         listener.wait_for_signal()
         power, saver = listener.display_powersave, listener.screensaver_active
         power = '?' if power is None else 'POWERSAVE' if power else 'ACTIVE'
@@ -163,7 +173,7 @@ elif args.dbus:
     listener = ScreenSaverListener(debug=args.debug_dbus)
     last_on = time.time()
     controller.set_power(True)
-    while True:
+    while listener.connected:
         listener.wait_for_signal()
         now = time.time()
         if listener.display_powersave and listener.screensaver_active:
