@@ -12,7 +12,7 @@ def update_links(source_rel, home_rel):
     source_to_home = os.path.relpath(source_abs, start=home_abs)
     links = {f: normjoin(source_to_home, f) for f in os.listdir(source_abs)}
 
-    for existing_name in os.listdir(home_abs):
+    for existing_name in sorted(os.listdir(home_abs)):
         existing_abs = normjoin(home_abs, existing_name)
         try:
             existing_link = os.readlink(existing_abs)
@@ -23,18 +23,20 @@ def update_links(source_rel, home_rel):
             tilde_rel = normjoin("~", home_rel, existing_name)
             desired_link = links.pop(existing_name, None)
             if not desired_link:
-                print(f"remove {tilde_rel} (was {existing_link})")
+                print(f"*remove* {tilde_rel} (was {existing_link})")
                 os.remove(existing_abs)
-            elif desired_link != existing_link:
+            elif desired_link == existing_link:
+                print(f"(keep {tilde_rel} => {existing_link})")
+            else:
                 print(
-                    f"update {tilde_rel} => {desired_link} "
+                    f"*update* {tilde_rel} => {desired_link} "
                     f"(was {existing_link})")
                 os.remove(existing_abs)
                 os.symlink(desired_link, existing_abs)
 
-    for new_name, new_link in links.items():
+    for new_name, new_link in sorted(links.items()):
         tilde_rel = normjoin("~", home_rel, new_name)
-        print(f"link {tilde_rel} => {new_link}")
+        print(f"*link* {tilde_rel} => {new_link}")
         os.symlink(new_link, normjoin(home_abs, new_name))
 
 
