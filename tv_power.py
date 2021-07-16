@@ -44,7 +44,7 @@ class ScreenSaverListener:
             path='/org/gnome/ScreenSaver')
 
         self._dbus.call_on_disconnection(self._on_disconnect)
-        seld._dbus.set_exit_on_disconnect(False)
+        self._dbus.set_exit_on_disconnect(False)
 
     def _on_screensaver_wakeup(self):
         if self._debug:
@@ -69,7 +69,7 @@ class ScreenSaverListener:
 
     def _on_disconnect(self, dbus):
         if self._debug:
-            print('DBUS disconnected!')
+            print('DBUS disconnected!', file=sys.stderr)
         self.connected = False
         self._loop.quit()
 
@@ -138,7 +138,7 @@ class CecController:
             for level in ["ERROR", "WARNING", "NOTICE", "TRAFFIC", "DEBUG"]
         }
 
-        if self._debug or level <= cec.CEC_LOG_WARNING:
+        if self._debug or level <= cec.CEC_LOG_ERROR:
             print(f"CEC {prefix.get(level, level)} {message}", file=sys.stderr)
 
 
@@ -158,11 +158,12 @@ args = parser.parse_args()
 if args.dbus_test:
     listener = ScreenSaverListener(debug=args.debug_dbus)
     while listener.connected:
-        listener.wait_for_signal()
         power, saver = listener.display_powersave, listener.screensaver_active
         power = '?' if power is None else 'POWERSAVE' if power else 'ACTIVE'
         saver = '?' if saver is None else 'ACTIVE' if saver else 'INACTIVE'
-        print(f'--- display={power} screensaver={saver} ---')
+        print(f'--- display={power} screensaver={saver} ---', file=sys.stderr)
+        listener.wait_for_signal()
+    print("*** dbus disconnected, exiting", file=sys.stderr)
 
 controller = CecController(debug=args.debug_cec)
 if args.off:
@@ -171,22 +172,23 @@ elif args.on:
     controller.set_power(True)
 elif args.dbus:
     listener = ScreenSaverListener(debug=args.debug_dbus)
-    last_on = time.time()
+    last = time.time()
+    print("=== START => WAKE UP TV ===", file=sys.stderr)
     controller.set_power(True)
     while listener.connected:
-        listener.wait_for_signal()
         now = time.time()
         if listener.display_powersave and listener.screensaver_active:
             if args.debug_dbus:
-                print("DBUS --- screensaver powersave; no action ---")
-        elif now - last_on < 10.0:
+                print("--- (saver on & powersave, wait)", file=sys.stderr)
+        elif now - last < 10.0:
             if args.debug_dbus:
-                print(f"DBUS --- on {now - last_on:.1f}s ago, no action ---")
+                print(f"--- (on {now - last:.1f}s ago, wait)", file=sys.stderr)
         else:
-            if args.debug_dbus:
-                print(f"DBUS => CEC === WAKE UP ===")
+            print("=== ACTIVE => WAKE UP TV ===", file=sys.stderr)
             try:
                 controller.set_power(True)
-                last_on = now
+                last = now
             except IOError as e:
                 print(f"*** {e}", file=sys.stderr)
+        listener.wait_for_signal()
+    print("*** dbus disconnected, exiting", file=sys.stderr)

@@ -2,5 +2,5 @@
 Type=Application
 Name=TV Power Switcher
 Comment=Turn the TV on with CEC when unblanking the screen
-Exec=/home/egnor/source/dotfiles/tv_power.py --dbus
+Exec=/home/egnor/source/dotfiles/tv_power.py --dbus --debug_dbus
 StartupNotify=false

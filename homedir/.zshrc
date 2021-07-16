@@ -12,4 +12,5 @@ PROMPT='%# '
 RPROMPT=' %(?..%? )%~ %B%m%b'
 
 test -n $commands[direnv] && eval "$(direnv hook zsh)"
+test -x $commands[kitty] && eval "$(kitty + complete setup zsh)"
 test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
