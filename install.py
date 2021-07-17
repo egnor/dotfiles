@@ -23,7 +23,7 @@ def update_links(source_rel, home_rel):
             tilde_rel = normjoin("~", home_rel, existing_name)
             desired_link = links.pop(existing_name, None)
             if not desired_link:
-                print(f"*remove* {tilde_rel} (was {existing_link})")
+                print(f"*remove* {tilde_rel} (was => {existing_link})")
                 os.remove(existing_abs)
             elif desired_link == existing_link:
                 print(f"(keep {tilde_rel} => {existing_link})")
@@ -37,6 +37,9 @@ def update_links(source_rel, home_rel):
     for new_name, new_link in sorted(links.items()):
         tilde_rel = normjoin("~", home_rel, new_name)
         print(f"*link* {tilde_rel} => {new_link}")
+        target = normjoin(home_abs, new_name)
+        if os.path.isdir(target) and not os.listdir(target):
+            os.rmdir(normjoin(home_abs, new_name))
         os.symlink(new_link, normjoin(home_abs, new_name))
 
 
