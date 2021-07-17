@@ -1,12 +1,12 @@
 def set_colors():
     import xonsh.tools
     regular = "nobold noitalic #FFF bg:"
-    comment = "nobold noitalic bold #FF0 bg:"
-    error = "nobold noitalic bold #F77 bg:"  # Not actually used?
-    name = "nobold noitalic bold #DDD bg:"
-    name_builtin = "nobold noitalic bold #7D7 bg:"
-    literal = "nobold noitalic bold #ADF bg:"
-    literal_escape = "nobold noitalic bold #DEF bg:"
+    comment = "bold noitalic #FF0 bg:"
+    error = "bold noitalic #F77 bg:"  # Not actually used?
+    name = "bold noitalic #DDD bg:"
+    name_builtin = "bold noitalic #7D7 bg:"
+    literal = "bold noitalic #ADF bg:"
+    literal_escape = "bold noitalic #DEF bg:"
     noise = "nobold noitalic #BBB bg:"
     suggest = "nobold noitalic #999 bg:"
     menu = "nobold noitalic #000 bg:#BBB"
@@ -86,9 +86,9 @@ def set_colors():
     # Used for ls and also for command line highlighting
     normal = "RESET",
     special = "BOLD_YELLOW",
-    program = "#7D7",
-    directory = "#ADF",
-    symlink = "#DEF",
+    program = "BOLD_#7D7",
+    directory = "BOLD_#ADF",
+    symlink = "BOLD_#DEF",
     missing = "BOLD_BLACK", "BACKGROUND_WHITE",
     red_alert = "BOLD_WHITE", "BACKGROUND_RED",
     yellow_alert = "BOLD_BLACK", "BACKGROUND_YELLOW",
