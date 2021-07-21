@@ -1,8 +1,7 @@
-$XONSH_COLOR_STYLE = "default"  # Until the "egnor" style is defined.
+xontrib load apt_tabcomplete direnv linuxbrew kitty prompt_ret_code
 
-xontrib load apt_tabcomplete direnv kitty
-
-# xontrib load linuxbrew  # https://github.com/eugenesvk/xontrib-linuxbrew/issues/5
+# https://github.com/xonsh/xonsh/issues/4383
+$UPDATE_OS_ENVIRON = False
 
 $SHELL_TYPE = "prompt_toolkit"
 $XONSH_SHOW_TRACEBACK = False
