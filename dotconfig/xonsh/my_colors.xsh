@@ -83,7 +83,7 @@ def set_colors():
         Token.Text.Whitespace: regular,
     })
 
-    # Used for ls and also for command line highlighting
+    # Used for ls and also for command line highlighting within xonsh
     normal = "RESET",
     special = "BOLD_YELLOW",
     program = "BOLD_#7D7",
