@@ -19,20 +19,19 @@ def update_links(source_rel, home_rel):
         except OSError:
             continue
 
-        if os.path.dirname(normjoin(home_abs, existing_link)) == source_abs:
-            tilde_rel = normjoin("~", home_rel, existing_name)
-            desired_link = links.pop(existing_name, None)
-            if not desired_link:
-                print(f"*remove* {tilde_rel} (was => {existing_link})")
-                os.remove(existing_abs)
-            elif desired_link == existing_link:
-                print(f"(keep {tilde_rel} => {existing_link})")
-            else:
-                print(
-                    f"*update* {tilde_rel} => {desired_link} "
-                    f"(was {existing_link})")
-                os.remove(existing_abs)
-                os.symlink(desired_link, existing_abs)
+        tilde_rel = normjoin("~", home_rel, existing_name)
+        desired_link = links.pop(existing_name, None)
+        if not desired_link:
+            print(f"*remove* {tilde_rel} (was => {existing_link})")
+            os.remove(existing_abs)
+        elif desired_link == existing_link:
+            print(f"(keep {tilde_rel} => {existing_link})")
+        else:
+            print(
+                f"*update* {tilde_rel} => {desired_link} "
+                f"(was {existing_link})")
+            os.remove(existing_abs)
+            os.symlink(desired_link, existing_abs)
 
     for new_name, new_link in sorted(links.items()):
         tilde_rel = normjoin("~", home_rel, new_name)
