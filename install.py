@@ -21,9 +21,11 @@ def update_links(source_rel, home_rel):
 
         tilde_rel = normjoin("~", home_rel, existing_name)
         desired_link = links.pop(existing_name, None)
-        if not desired_link:
+        if not desired_link and "dotfiles" in existing_link:
             print(f"*remove* {tilde_rel} (was => {existing_link})")
             os.remove(existing_abs)
+        elif not desired_link:
+            print(f"(ignore {tilde_rel} => {existing_link})")
         elif desired_link == existing_link:
             print(f"(keep {tilde_rel} => {existing_link})")
         else:
