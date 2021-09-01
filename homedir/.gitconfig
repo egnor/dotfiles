@@ -1,0 +1,7 @@
+[user]
+	email = egnor@ofb.net
+	name = Dan Egnor
+[credential]
+	helper = store
+[pull]
+	ff = only
