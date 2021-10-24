@@ -46,3 +46,4 @@ def update_links(source_rel, home_rel):
 
 update_links("homedir", ".")
 update_links("dotconfig", ".config")
+update_links("dotssh", ".ssh")
