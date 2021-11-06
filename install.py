@@ -12,6 +12,7 @@ def update_links(source_rel, home_rel):
     source_to_home = os.path.relpath(source_abs, start=home_abs)
     links = {f: normjoin(source_to_home, f) for f in os.listdir(source_abs)}
 
+    os.makedirs(home_abs, exist_ok=True)
     for existing_name in sorted(os.listdir(home_abs)):
         existing_abs = normjoin(home_abs, existing_name)
         try:
