@@ -22,3 +22,8 @@ Host pitunnel5
     HostName pitunnel.com
     User pi
     Port 13191
+
+Host pitunnel6
+    HostName pitunnel.com
+    User pi
+    Port 14517
