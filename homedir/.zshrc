@@ -11,9 +11,10 @@ path=(~/.poetry/bin ~/.local/bin ~/npm/bin ~/go/bin $path)
 
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
-test -n "$commands[direnv]" && eval "$(direnv hook zsh)"
 test -n "$commands[kitty]" && eval "$(kitty + complete setup zsh)"
 test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
-test -e ~/.nix-profile/etc/profile.d/nix.sh && . ~/.nix-profile/etc/profile.d/nix.sh
+test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 ls() { /bin/ls -A -F "$@" }
+
+eval "$(direnv hook zsh)"
