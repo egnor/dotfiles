@@ -15,3 +15,5 @@
 	editor = vi
 [pull]
 	ff = only
+[alias]
+	ack = ! git ls-files --others --cached --exclude-standard | ack -x
