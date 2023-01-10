@@ -16,4 +16,4 @@
 [pull]
 	ff = only
 [alias]
-	ack = ! git ls-files --others --cached --exclude-standard | ack -x
+	ack = ! git ls-files --others --cached --exclude-standard | xargs -0 ack
