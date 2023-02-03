@@ -11,7 +11,6 @@ path=(~/.poetry/bin ~/.local/bin ~/npm/bin ~/go/bin $path)
 
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
-test -n "$commands[kitty]" && eval "$(kitty + complete setup zsh)"
 test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
 test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
