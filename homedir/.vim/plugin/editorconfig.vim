@@ -74,6 +74,7 @@ function! s:FindPythonInterp() " {{{1
     if has('unix')
         let l:searching_list = [
                     \ 'python',
+                    \ 'python3',
                     \ 'python27',
                     \ 'python26',
                     \ 'python25',

@@ -1,0 +1,20 @@
+# See https://help.github.com/ignore-files/ for more about ignoring files.
+homedir/.vim/.netrwhist
+homedir/.vim/doc/
+
+# Python
+__pycache__/
+.pytest_cache
+.venv
+venv/
+*.egg-info
+*.py[cod]
+
+# Generic OS metadata, editor backups, IDE local settings, etc.
+*~
+._*
+.*.swp
+
+# Temporary files
+tmp/
+*.tmp
