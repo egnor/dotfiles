@@ -8,6 +8,8 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 
 typeset -TU PATH path
 path=(~/.poetry/bin ~/.local/bin ~/npm/bin ~/go/bin $path)
+path=(/var/lib/flatpak/exports/bin $path)
+path=(~/.local/share/flatpak/exports/bin $path)
 
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
