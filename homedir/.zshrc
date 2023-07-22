@@ -16,7 +16,7 @@ export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
 test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-ls() { /bin/ls -A -F "$@" }
+ls() { command ls -A -F "$@" }
 R() { command R --no-save "$@" }
 
 eval "$(direnv hook zsh)"
