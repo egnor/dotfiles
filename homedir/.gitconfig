@@ -12,6 +12,8 @@
 	ff = only
 [alias]
 	ack = ! git ls-files --others --cached --exclude-standard -z | xargs -0 ack
+	prune-gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
+
 [credential "https://github.com"]
 	helper = 
 	helper = !gh auth git-credential
