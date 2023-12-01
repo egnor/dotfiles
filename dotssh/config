@@ -7,3 +7,6 @@ Host pitunnel6
     HostName pitunnel.com
     User pi
     Port 14517
+
+Host *.palace.games
+    User pi
