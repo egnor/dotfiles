@@ -1,6 +1,6 @@
 [submodule "dotconfig/nvim/pack/github/start/copilot.vim"]
-	path = dotconfig/nvim/pack/github/start/copilot.vim
+	path = homedir/.config/nvim/pack/github/start/copilot.vim
 	url = https://github.com/github/copilot.vim
 [submodule "dotconfig/nvim/pack/mechatroner/start/rainbow_csv"]
-	path = dotconfig/nvim/pack/mechatroner/start/rainbow_csv
+	path = homedir/.config/nvim/pack/mechatroner/start/rainbow_csv
 	url = https://github.com/mechatroner/rainbow_csv
