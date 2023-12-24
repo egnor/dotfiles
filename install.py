@@ -3,6 +3,7 @@
 import os
 import os.path
 import stat
+import sys
 
 def normjoin(*paths):
     return os.path.normpath(os.path.join(*paths))
@@ -16,7 +17,9 @@ for source_sub, subdirs, names in os.walk(source_abs):
     sub_rel = os.path.relpath(source_sub, start=source_abs)
     home_sub = os.path.join(home_abs, sub_rel)
     home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
-    if ".git" in names:
+    if not (subdirs or names):
+        sys.exit(f"EMPTY: {source_sub}")
+    elif ".git" in names:
         links[sub_rel] = home_to_source_sub
         subdirs[:] = []  # Prune subdirectories
     else:
