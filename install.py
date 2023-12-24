@@ -24,12 +24,14 @@ for source_sub, dirs, names in os.walk(source_abs):
         dirs[:] = []  # Prune subdirectories
     else:
         home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
+        names.extend(d for d in dirs if os.path.islink(normjoin(source_sub, d)))
         for name in names:
             links[normjoin(sub_rel, name)] = normjoin(home_to_source_sub, name)
 
 os.makedirs(home_abs, exist_ok=True)
 for home_sub, dirs, names in os.walk(home_abs):
     sub_rel = os.path.relpath(home_sub, start=home_abs)
+    names.extend(d for d in dirs if os.path.islink(normjoin(home_sub, d)))
     for name in names:
         existing_abs = normjoin(home_sub, name)
         try:
