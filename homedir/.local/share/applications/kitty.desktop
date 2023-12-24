@@ -1,1 +1,9 @@
-/home/egnor/.local/kitty.app/share/applications/kitty.desktop
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=kitty
+GenericName=Terminal emulator
+Comment=Fast, feature-rich, GPU based terminal
+Exec=/home/egnor/.local/kitty.app/bin/kitty
+Icon=/home/egnor/.local/kitty.app/share/icons/hicolor/256x256/apps/kitty.png
+Categories=System;TerminalEmulator;

@@ -16,8 +16,12 @@ for source_sub, subdirs, names in os.walk(source_abs):
     sub_rel = os.path.relpath(source_sub, start=source_abs)
     home_sub = os.path.join(home_abs, sub_rel)
     home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
-    for name in names:
-        links[normjoin(sub_rel, name)] = normjoin(home_to_source_sub, name)
+    if ".git" in names:
+        links[sub_rel] = home_to_source_sub
+        subdirs[:] = []  # Prune subdirectories
+    else:
+        for name in names:
+            links[normjoin(sub_rel, name)] = normjoin(home_to_source_sub, name)
 
 os.makedirs(home_abs, exist_ok=True)
 for home_sub, subdirs, names in os.walk(home_abs):

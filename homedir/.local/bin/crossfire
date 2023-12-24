@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+import pathlib
+import subprocess
+import sys
+
+xf_home = pathlib.Path.home() / "source/CrossFire"
+
+try:
+    command = ["java", "-cp", xf_home, "-jar", xf_home / "CrossFire.jar"]
+    subprocess.run(command, cwd=xf_home)
+except FileNotFoundError:
+    print("*** No Java? Try: sudo apt install default-jre", file=sys.stderr)
+
