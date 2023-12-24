@@ -13,21 +13,22 @@ source_abs = normjoin(os.getcwd(), os.path.dirname(__file__), "homedir")
 home_to_source = os.path.relpath(source_abs, start=home_abs)
 
 links = {}
-for source_sub, subdirs, names in os.walk(source_abs):
+for source_sub, dirs, names in os.walk(source_abs):
     sub_rel = os.path.relpath(source_sub, start=source_abs)
     home_sub = os.path.join(home_abs, sub_rel)
-    home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
-    if not (subdirs or names):
+    if not (dirs or names):
         sys.exit(f"EMPTY: {source_sub}")
     elif ".git" in names:
-        links[sub_rel] = home_to_source_sub
-        subdirs[:] = []  # Prune subdirectories
+        home_parent = os.path.dirname(home_sub)
+        links[sub_rel] = os.path.relpath(source_sub, start=home_parent)
+        dirs[:] = []  # Prune subdirectories
     else:
+        home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
         for name in names:
             links[normjoin(sub_rel, name)] = normjoin(home_to_source_sub, name)
 
 os.makedirs(home_abs, exist_ok=True)
-for home_sub, subdirs, names in os.walk(home_abs):
+for home_sub, dirs, names in os.walk(home_abs):
     sub_rel = os.path.relpath(home_sub, start=home_abs)
     for name in names:
         existing_abs = normjoin(home_sub, name)
