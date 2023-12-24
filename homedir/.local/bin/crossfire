@@ -4,7 +4,7 @@ import pathlib
 import subprocess
 import sys
 
-xf_home = pathlib.Path.home() / "source/CrossFire"
+xf_home = pathlib.Path.home() / ".local/CrossFire"
 
 try:
     command = ["java", "-cp", xf_home, "-jar", xf_home / "CrossFire.jar"]
