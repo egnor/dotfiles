@@ -1,18 +1,24 @@
-[user]
-	email = egnor@ofb.net
-	name = Dan Egnor
-[push]
-	default = upstream
-[credential]
-	helper = store
-[core]
-	autocrlf = input
-	editor = vi
-[pull]
-	ff = only
 [alias]
 	ack = ! git ls-files --others --cached --exclude-standard -z | xargs -0 ack
 	prune-gone = ! "git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == \"[gone]\" {print $1}' | xargs -r git branch -D"
+[core]
+	autocrlf = input
+	editor = vi
+[credential]
+	helper = store
+[diff]
+	tool = bc4
+[init]
+	defaultBranch = main
+[pull]
+	ff = only
+[push]
+	default = upstream
+[submodule]
+	recurse = true
+[user]
+	email = egnor@ofb.net
+	name = Dan Egnor
 
 [credential "https://github.com"]
 	helper = 
@@ -20,7 +26,3 @@
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !gh auth git-credential
-[init]
-	defaultBranch = main
-[diff]
-	tool = bc4
