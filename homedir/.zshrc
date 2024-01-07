@@ -9,7 +9,7 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
 typeset -TU PATH path
-path=(~/.local/bin $path)
+path=(~/.local/bin ~/.meteor $path)
 path=(/var/lib/flatpak/exports/bin ~/.local/share/flatpak/exports/bin $path)
 
 test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
