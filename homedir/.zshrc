@@ -18,4 +18,5 @@ test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbre
 (( $+commands[mise] )) && eval "$(mise activate --status zsh)"
 
 ls() { command ls -A -F "$@" }
+mr() { mise run "$@" }
 R() { command R --no-save "$@" }
