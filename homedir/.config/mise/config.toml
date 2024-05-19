@@ -1,3 +1,6 @@
 [tools]
 node = 'lts'
 python = 'latest'
+
+[settings]
+python_compile = false
