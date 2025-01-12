@@ -5,6 +5,7 @@ bindkey -v
 setopt GLOB_DOTS
 PROMPT='%# '
 RPROMPT=' %(?..%? )%~ %B%m%b'
+[[ "egnor" != "$USERNAME" ]] && PROMPT="%B$USERNAME%b $PROMPT"
 
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
