@@ -1,6 +1,6 @@
 [tools]
 node = 'lts'
-python = 'latest'
+python = "3.12"
 
 [settings]
 python_compile = false

@@ -1,6 +1,7 @@
 --sort-files
 --ignore-dir=build
 --ignore-dir=.direnv
+--ignore-dir=match:*.tmp
 --ignore-dir=.meteor
 --ignore-dir=node_modules
 --ignore-dir=python_venv
