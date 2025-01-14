@@ -1,2 +1,2 @@
 syntax off
-set et sw=2 mouse=
+set colorcolumn=80 expandtab mouse= shiftwidth=2
