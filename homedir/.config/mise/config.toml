@@ -1,6 +1,7 @@
 [tools]
-node = 'lts'
+node = "lts"
 python = "3.12"
+ripgrep = "latest"
 
 [settings]
 python_compile = false

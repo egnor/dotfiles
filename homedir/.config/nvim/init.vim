@@ -1,2 +1,2 @@
 syntax off
-set colorcolumn=80 expandtab mouse= shiftwidth=2
+set colorcolumn=81 expandtab mouse= shiftwidth=2
