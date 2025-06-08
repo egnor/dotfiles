@@ -1,8 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=CrossFire
-GenericName=Crossword Constructor
-Exec=/home/egnor/.local/bin/crossfire
-Categories=Education
-X-Desktop-File-Install-Version=0.26
