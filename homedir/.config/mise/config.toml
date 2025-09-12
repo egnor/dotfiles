@@ -1,6 +1,7 @@
 [tools]
 python = "3.12"
 ripgrep = "latest"
+jujutsu = "latest"
 
 [settings]
 python_compile = false
