@@ -3,3 +3,6 @@
 [user]
 name = "Dan Egnor"
 email = "egnor@ofb.net"
+
+[ui]
+editor = "vi"
