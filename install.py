@@ -13,14 +13,9 @@ source_abs = normjoin(os.getcwd(), os.path.dirname(__file__), "homedir")
 home_to_source = os.path.relpath(source_abs, start=home_abs)
 
 for source_sub, dirs, names in os.walk(source_abs):
-    links = {}
-
     sub_rel = os.path.relpath(source_sub, start=source_abs)
     home_sub = os.path.join(home_abs, sub_rel)
-    if not (dirs or names):
-        sys.exit(f"EMPTY: {source_sub}")
-
-    print(f"📂 {sub_rel}")
+    print(f"📂 {sub_rel}{'' if (dirs or names) else ' (EMPTY)'}")
 
     walk_dirs, dirs[:] = dirs[:], []
     for dir_name in walk_dirs:
@@ -34,18 +29,21 @@ for source_sub, dirs, names in os.walk(source_abs):
         else:
             dirs.append(dir_name)
 
+    links = {}
     home_to_source_sub = os.path.relpath(source_sub, start=home_sub)
     for name in names:
         links[normjoin(sub_rel, name)] = normjoin(home_to_source_sub, name)
 
+    old_links = {}
     for old_name in os.listdir(home_sub) if os.path.isdir(home_sub) else []:
         old_abs = normjoin(home_sub, old_name)
+        old_rel = normjoin(sub_rel, old_name)
         try:
-            old_link = os.readlink(old_abs)
+            old_links[old_rel] = os.readlink(old_abs)
         except OSError:
             continue  # not a symlink, ignore
 
-        old_rel = normjoin(sub_rel, old_name)
+    for old_rel, old_link in sorted(old_links.items()):
         old_tilde = normjoin("~", old_rel)
         desired_link = links.pop(old_rel, None)
         if desired_link == old_link:
@@ -60,12 +58,12 @@ for source_sub, dirs, names in os.walk(source_abs):
             os.remove(old_abs)
             os.symlink(desired_link, old_abs)
 
-    for new_name, new_link in sorted(links.items()):
-        tilde_rel = normjoin("~", new_name)
-        target = normjoin(home_abs, new_name)
+    for new_rel, new_link in sorted(links.items()):
+        tilde_rel = normjoin("~", new_rel)
+        target = normjoin(home_abs, new_rel)
         if os.path.isdir(target) and not os.listdir(target):
-            print(f"🗑️ RMDIR {new_name}")
-            os.rmdir(normjoin(home_abs, new_name))
+            print(f"🗑️ RMDIR {new_rel}")
+            os.rmdir(normjoin(home_abs, new_rel))
 
         parent = os.path.dirname(target)
         if not os.path.isdir(parent):
@@ -73,7 +71,7 @@ for source_sub, dirs, names in os.walk(source_abs):
             os.makedirs(parent, exist_ok=True)
 
         print(f"🔗 SYMLINK {tilde_rel} => {new_link}")
-        os.symlink(new_link, normjoin(home_abs, new_name))
+        os.symlink(new_link, normjoin(home_abs, new_rel))
 
-    if names:
+    if links or old_links:
         print()
