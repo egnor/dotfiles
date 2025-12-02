@@ -1,6 +1,7 @@
 [tools]
 python = "3.12"
 ripgrep = "latest"
+"ubi:junegunn/fzf" = "latest"
 
 [settings]
 python_compile = false
