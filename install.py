@@ -44,6 +44,7 @@ for source_sub, dirs, names in os.walk(source_abs):
             continue  # not a symlink, ignore
 
     for old_rel, old_link in sorted(old_links.items()):
+        old_abs = normjoin(home_abs, old_rel)
         old_tilde = normjoin("~", old_rel)
         desired_link = links.pop(old_rel, None)
         if desired_link == old_link:

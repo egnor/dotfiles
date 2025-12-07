@@ -1,4 +1,5 @@
 [tools]
+luajit = "latest"
 neovim = "latest"
 python = "3.12"
 ripgrep = "latest"
