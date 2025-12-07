@@ -17,6 +17,7 @@ test -x ~/.linuxbrew/bin/brew && eval "$(~/.linuxbrew/bin/brew shellenv)"
 test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 (( $+commands[mise] )) && eval "$(mise activate --status zsh)"
 (( $+commands[fzf] )) && eval "$(fzf --zsh)"
+(( $+commands[nvim] )) && vi() { nvim "$@" }
 
 ls() { command ls -A -F "$@" }
 mr() { mise run "$@" }
