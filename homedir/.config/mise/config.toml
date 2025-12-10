@@ -1,3 +1,4 @@
+[tools]
 luajit = "latest"
 neovim = "latest"
 node = "24"
