@@ -7,3 +7,4 @@ vim.opt.relativenumber = false --
 vim.opt.signcolumn = "no"
 vim.opt.wrap = true
 vim.g.lazyvim_python_lsp = "none"
+vim.g.minipairs_disable = true
