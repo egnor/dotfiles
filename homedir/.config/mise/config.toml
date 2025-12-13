@@ -5,7 +5,6 @@ node = "24"
 python = "3.12"
 "cargo:rep-grep" = "latest"
 ripgrep = "latest"
-"ubi:junegunn/fzf" = "latest"
 
 [settings]
 python_compile = false
