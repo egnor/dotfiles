@@ -2,9 +2,18 @@
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
 vim.opt.colorcolumn = "81"
+vim.opt.linebreak = false
 vim.opt.number = false
 vim.opt.relativenumber = false --
 vim.opt.signcolumn = "no"
 vim.opt.wrap = true
 vim.g.lazyvim_python_lsp = "none"
 vim.g.minipairs_disable = true
+
+vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter" }, {
+  group = vim.api.nvim_create_augroup("ColorOverrides", {}),
+  pattern = "*",
+  callback = function()
+    vim.api.nvim_set_hl(0, "ColorColumn", { bg = "#993300" })
+  end,
+})
