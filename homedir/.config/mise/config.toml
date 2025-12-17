@@ -3,8 +3,9 @@ luajit = "latest"
 neovim = "latest"
 node = "24"
 python = "3.12"
-"cargo:rep-grep" = "latest"
 ripgrep = "latest"
+"npm:@anthropic-ai/claude-code" = "latest"
+"npm:@github/copilot-language-server" = "latest"
 
 [settings]
 python_compile = false
