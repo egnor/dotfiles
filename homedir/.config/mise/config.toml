@@ -1,4 +1,5 @@
 [tools]
+fd = "latest"
 lazygit = "latest"
 luajit = "latest"
 neovim = "latest"
