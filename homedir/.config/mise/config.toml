@@ -1,4 +1,5 @@
 [tools]
+lazygit = "latest"
 luajit = "latest"
 neovim = "latest"
 node = "24"
