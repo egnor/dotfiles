@@ -1,7 +1,8 @@
 [tools]
 fd = "latest"
 lazygit = "latest"
-luajit = "latest"
+# doesn't build on pi?
+# luajit = "latest"
 "aqua:neovim/neovim" = "latest"
 node = "24"
 python = "3.12"
