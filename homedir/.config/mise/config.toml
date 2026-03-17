@@ -7,7 +7,6 @@ lazygit = "latest"
 node = "24"
 python = "3.12"
 ripgrep = "latest"
-"npm:@anthropic-ai/claude-code" = "latest"
 "npm:@github/copilot-language-server" = "latest"
 
 [settings]
