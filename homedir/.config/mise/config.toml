@@ -1,5 +1,6 @@
 [tools]
 fd = "latest"
+gh = "latest"
 lazygit = "latest"
 # doesn't build on pi?
 # luajit = "latest"
