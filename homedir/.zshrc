@@ -9,6 +9,12 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 
 export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
 
+# Upgrade TERM from LC_TERM if ssh forwarded a value the local terminfo supports
+if [[ -n "$LC_TERM" && "$LC_TERM" != "$TERM" ]] && infocmp "$LC_TERM" &>/dev/null; then
+  export TERM=$LC_TERM
+fi
+unset LC_TERM
+
 typeset -TU PATH path
 path=(~/.local/bin ~/.meteor $path)
 path=(/var/lib/flatpak/exports/bin ~/.local/share/flatpak/exports/bin $path)
@@ -22,4 +28,5 @@ test -x /home/linuxbrew/.linuxbrew/bin/brew && eval "$(/home/linuxbrew/.linuxbre
 ls() { command ls -A -F "$@" }
 mr() { mise run "$@" }
 R() { command R --no-save "$@" }
+ssh() { LC_TERM="$TERM" TERM=xterm-256color command ssh "$@" }
 export PATH=/home/egnor/.meteor:$PATH
