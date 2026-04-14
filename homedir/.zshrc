@@ -9,7 +9,7 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 [[ "egnor" != "$USERNAME" ]] && PROMPT="%B$USERNAME%b $PROMPT"
 
 # Set terminal type 
-export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
+export TERMINFO_DIRS="$HOME/.local/kitty.app/share/terminfo:/usr/share/terminfo:/etc/terminfo:/lib/terminfo"
 if [[ -z "$TERM_FALLBACK" ]]; then
   for TERM_FALLBACK in ${(s:,:)LC_TERM_FALLBACK}; do
     if infocmp "$TERM_FALLBACK" &> /dev/null; then
