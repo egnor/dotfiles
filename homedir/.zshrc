@@ -10,10 +10,10 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 
 # Set terminal type 
 export TERMINFO_DIRS="$HOME/.local/kitty.app/share/terminfo:/usr/share/terminfo:/etc/terminfo:/lib/terminfo"
-if [[ -z "$TERM_FALLBACK" ]]; then
-  for TERM_FALLBACK in ${(s:,:)LC_TERM_FALLBACK}; do
-    if infocmp "$TERM_FALLBACK" &> /dev/null; then
-      export TERM="$TERM_FALLBACK"
+if [[ -z "$TERM_FOUND" ]]; then
+  for TERM_FOUND in ${(s:,:)LC_TERM_FALLBACK}; do
+    if infocmp "$TERM_FOUND" &> /dev/null; then
+      export TERM="$TERM_FOUND"
       export TERM_FALLBACK
       break
     fi
