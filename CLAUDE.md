@@ -21,6 +21,12 @@ Run with `./install.py` from the repo. The script walks `homedir/` and, for each
 
 Neovim config under `homedir/.config/nvim/` is a LazyVim starter — plugins are managed by lazy.nvim at runtime, not vendored here.
 
+## `system_tweaks.py`
+
+Idempotent applier for root-owned system config (systemd drop-ins, `/etc/` files, etc.) that doesn't belong under `homedir/`. Re-execs itself under sudo if not already root. Each tweak is a function in the `TWEAKS` list; the shared `ensure_file(path, content)` helper writes only when content differs and returns a change flag so callers can gate follow-up actions (`systemctl daemon-reload`, etc.) on real changes. Add new tweaks by writing a function and appending it to `TWEAKS`.
+
 ## `tv_power.py`
+
+**Stale — kept for reference, not actively used.** The CEC gizmo and this script were never reliable enough to trust as an auto-power-on mechanism. Left in the repo in case the "wake TV like a monitor" problem is revisited.
 
 Standalone Raspberry Pi utility, unrelated to the dotfiles install flow. Uses `libcec` to drive TV power and listens on the GNOME session bus (`org.gnome.ScreenSaver` + `org/gnome/Mutter/DisplayConfig`) to wake the TV when the screen unblanks. The `tv_power.desktop` autostart entry launches it with `--dbus`. Modes (`--on`, `--off`, `--dbus`, `--dbus_test`) are mutually exclusive. Requires the `cec`, `dbus`, and `gi` Python bindings from the system packages — it is not pip-installable on its own.
