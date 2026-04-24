@@ -11,5 +11,4 @@ ripgrep = "latest"
 "npm:@github/copilot-language-server" = "latest"
 
 [settings]
-python_compile = false
 idiomatic_version_file_enable_tools = ["node", "python"]
