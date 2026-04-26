@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Apply system-level tweaks idempotently. Re-execs under sudo if needed."""
 
+# TODO: add /etc/apt/apt.conf.d/52unattended-block-firefox
+
 import os
 import subprocess
 import sys
@@ -26,15 +28,11 @@ def tweak_packagekit_memory_cap():
     # the cgroup OOM killer reaps it before it drags the box into swap.
     path = "/etc/systemd/system/packagekit.service.d/memory-limit.conf"
     content = (
-        "# Managed by system_tweaks.py\n"
-        "[Service]\n"
-        "MemoryMax=2G\n"
-        "MemorySwapMax=0\n"
+        "# Managed by system_tweaks.py\n[Service]\nMemoryMax=2G\nMemorySwapMax=0\n"
     )
     if ensure_file(path, content):
         subprocess.run(["systemctl", "daemon-reload"], check=True)
-        subprocess.run(
-            ["systemctl", "try-restart", "packagekit.service"], check=True)
+        subprocess.run(["systemctl", "try-restart", "packagekit.service"], check=True)
         print("🔄 reloaded systemd, restarted packagekit if active")
 
 
