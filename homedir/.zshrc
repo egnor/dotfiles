@@ -8,20 +8,22 @@ PROMPT='%# '
 RPROMPT=' %(?..%? )%~ %B%m%b'
 [[ "egnor" != "$USERNAME" ]] && PROMPT="%B$USERNAME%b $PROMPT"
 
-# Set terminal type 
-TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
-TERMINFO_DIRS=$HOME/.local/kitty.app/share/terminfo:$TERMINFO_DIRS
-if [[ -z "$TERM_FOUND" ]]; then
-  for TERM_FOUND in ${(s:,:)LC_TERM_FALLBACK}; do
-    if infocmp "$TERM_FOUND" &> /dev/null; then
-      export TERM="$TERM_FOUND"
-      export TERM_FALLBACK
-      break
-    fi
+if [[ -z "$TERM_SET" ]]; then
+  TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
+  for term_sudo in ${(s:,:)LC_TERM_FALLBACK} ""; do
+    infocmp "$term_sudo" &>/dev/null && break
   done
+
+  TERMINFO_DIRS=$HOME/.local/kitty.app/share/terminfo:$TERMINFO_DIRS
+  for term_found in ${(s:,:)LC_TERM_FALLBACK} ""; do
+    infocmp "$term_found" &> /dev/null && break
+  done
+
+  export TERM="${term_found:-$TERM}" TERMINFO_DIRS TERM_SET=1
 fi
 
-# Use last fallback for outgoing ssh
+# Use systemwide fallback for sudo, last fallback for outgoing ssh
+sudo() { TERM="${term_sudo:-$TERM}" command sudo "$@" }
 ssh() { TERM="${${LC_TERM_FALLBACK##*,}:-${TERM}}" command ssh "$@" }
 
 typeset -TU PATH path
