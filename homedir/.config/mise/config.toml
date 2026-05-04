@@ -4,12 +4,11 @@ gh = "latest"
 lazygit = "latest"
 # doesn't build on pi?
 # luajit = "latest"
-"aqua:neovim/neovim" = "latest"
+neovim = "latest"
 node = "24"
 python = "3.12"
 ripgrep = "latest"
 "npm:@github/copilot-language-server" = "latest"
-neovim = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]
