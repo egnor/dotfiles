@@ -26,7 +26,7 @@ fi
 sudo() { TERM="${term_sudo:-$TERM}" command sudo "$@" }
 ssh() { TERM="${${LC_TERM_FALLBACK##*,}:-${TERM}}" command ssh "$@" }
 
-typeset -TU PATH path
+# typeset -TU PATH path
 path=(~/.local/bin ~/.meteor $path)
 path=(/var/lib/flatpak/exports/bin ~/.local/share/flatpak/exports/bin $path)
 
