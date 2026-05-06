@@ -8,7 +8,7 @@ PROMPT='%# '
 RPROMPT=' %(?..%? )%~ %B%m%b'
 [[ "egnor" != "$USERNAME" ]] && PROMPT="%B$USERNAME%b $PROMPT"
 
-if [[ -z "$TERM_SET" ]]; then
+if [[ -z "$TERM_FOUND" ]]; then
   TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
   for TERM_SUDO in ${(s:,:)LC_TERM_FALLBACK} ""; do
     infocmp "$TERM_SUDO" &>/dev/null && break
