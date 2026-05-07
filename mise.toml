@@ -15,4 +15,4 @@ postinstall = '''
 '''
 
 [tasks]
-deploy = "pyinfra @local deploy.py"
+deploy = "pyinfra -y @local deploy.py"
