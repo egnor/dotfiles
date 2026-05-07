@@ -1,0 +1,149 @@
+# Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/drain-teaser
+# Domains for "Drain Teaser" game
+
+server {
+    server_name blackletterlabs.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    rewrite ^/admin(/(.*))? https://api.blackletterlabs.com/_/$2;
+    location = / {
+        try_files /index.html =404;
+    }
+    location = /iap.html {
+        return 301 https://iap.blackletterlabs.com/$is_args$args;
+    }
+
+    add_header Access-Control-Allow-Origin *;
+    root /home/egnor/www-blackletterlabs;
+    error_page 404 =200 /catch.html;
+
+    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+}
+
+server {
+    server_name iap.blackletterlabs.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    rewrite ^/pb(/(.*))? https://api.blackletterlabs.com/_/$2;
+    location = / {
+        try_files /index.html =404;
+    }
+
+    add_header Access-Control-Allow-Origin *;
+    root /home/egnor/prod-blackletterlabs-iap/www_root;
+
+    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+}
+
+server {
+    server_name iap.blackletterlabs.com;
+    listen [::]:80;
+    listen 80;
+    return 301 https://iap.blackletterlabs.com$request_uri;
+}
+
+server {
+    server_name admin.blackletterlabs.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    return 301 https://iap.blackletterlabs.com/admin.html;
+
+    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+}
+
+server {
+    server_name admin.blackletterlabs.com;
+    listen [::]:80;
+    listen 80;
+    return 301 https://iap.blackletterlabs.com/admin.html;
+}
+
+server {
+    server_name api.blackletterlabs.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    location / {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://localhost:8090;
+    }
+
+    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+}
+
+server {
+    server_name www.blackletterlabs.com blackletterlab.com www.blackletterlab.com blacklettergame.com www.blacklettergame.com blackletterfortress.com www.blackletterfortress.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    return 301 https://blackletterlabs.com$request_uri;
+
+    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+}
+
+server {
+    server_name blackletterlabs.com *.blackletterlabs.com blackletterlab.com *.blackletterlab.com blacklettergame.com *.blacklettergame.com blackletterfortress.com *.blackletterfortress.com;
+    listen [::]:80;
+    listen 80;
+    return 301 https://blackletterlabs.com$request_uri;
+}
+
+server {
+    server_name seventeengames.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+
+    location = / {
+        return 301 https://shop.seventeengames.com/;
+    }
+
+    root /home/egnor/www-seventeengames;
+    add_header Access-Control-Allow-Origin *;
+    error_page 404 =200 /catch.html;
+
+    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
+}
+
+server {
+    server_name www.seventeengames.com 0b10001.com www.0b10001.com;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+    return 301 https://seventeengames.com$request_uri;
+
+    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
+}
+
+server {
+    server_name seventeengames.com *.seventeengames.com 0b10001.com *.0b10001.com;
+    listen [::]:80;
+    listen 80;
+    return 301 https://seventeengames.com$request_uri;
+}
+
+server {
+    server_name 17g.io www.17g.io;
+    listen [::]:443 ssl;
+    listen 443 ssl;
+
+    location = / {
+        return 301 https://shop.seventeengames.com/;
+    }
+    location ~ /(.+) {
+        return 301 https://seventeengames.com/scan.html?id=$1;
+    }
+
+    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
+}
+
+server {
+    server_name 17g.io *.17g.io;
+    listen [::]:80;
+    listen 80;
+    return 301 https://17g.io$request_uri;
+}

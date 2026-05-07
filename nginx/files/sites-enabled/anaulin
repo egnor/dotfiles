@@ -1,0 +1,55 @@
+# Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/anaulin
+
+# test.robotmolecule.com
+server {
+  server_name test.robotmolecule.com;
+  listen [::]:80;
+  listen 80;
+  root /home/anaulin/www/test-robotmolecule;
+  index index.html;
+}
+
+# robotmolecule.com
+server {
+  server_name robotmolecule.com www.robotmolecule.com;
+  root /home/anaulin/www/robotmolecule;
+  index index.html;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/robotmolecule.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/robotmolecule.com/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  server_name robotmolecule.com www.robotmolecule.com;
+  listen [::]:80;
+  listen 80;
+  return 301 https://robotmolecule.com$request_uri;
+}
+
+# realcoopstories.org
+server {
+  server_name realcoopstories.org www.realcoopstories.org;
+  root /home/anaulin/www/realcoopstories;
+  index index.html;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/realcoopstories.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/realcoopstories.org/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  server_name realcoopstories.org www.realcoopstories.org;
+  listen [::]:80;
+  listen 80;
+
+  if ($host = www.realcoopstories.org) { return 301 https://$host$request_uri; }
+  if ($host = realcoopstories.org)     { return 301 https://$host$request_uri; }
+  return 404;
+}

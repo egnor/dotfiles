@@ -1,0 +1,338 @@
+# Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/egnor
+
+# cara.vision
+server {
+  server_name cara.vision www.cara.vision;
+  if ($host != 'cara.vision') {
+    return 301 https://cara.vision$request_uri;
+  }
+  root /home/egnor/www-cara;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/cara.vision/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/cara.vision/privkey.pem;
+}
+
+server {
+  server_name cara.vision www.cara.vision;
+  listen [::]:80;
+  listen 80;
+  return 301 https://cara.vision$request_uri;
+}
+
+# competent.services
+server {
+  server_name approximately.competent.services www.approximately.competent.services competent.services www.competent.services egnor.approximately.competent.services www.egnor.approximately.competent.services eacs.io www.eacs.io egnor.io www.egnor.io egnor.services www.egnor.services;
+  if ($host != 'approximately.competent.services') {
+    return 301 https://approximately.competent.services$request_uri;
+  }
+
+  root /home/egnor/www-eacs;
+  index index.html;
+  # fancyindex disabled - module not available in PPA nginx
+  autoindex on;
+  add_header Access-Control-Allow-Origin *;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/competent.services/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/competent.services/privkey.pem;
+}
+
+server {
+  server_name approximately.competent.services www.approximately.competent.services competent.services www.competent.services egnor.approximately.competent.services www.egnor.approximately.competent.services eacs.io www.eacs.io egnor.io www.egnor.io egnor.services www.egnor.services;
+  listen [::]:80;
+  listen 80;
+  return 301 https://approximately.competent.services$request_uri;
+}
+
+# czartest
+server {
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  server_name czartest.teamleftout.org www.czartest.teamleftout.org;
+  root /home/egnor/www-czartest;
+  index index.html;
+
+  location /stateserver/ {
+    proxy_buffering off;
+    proxy_pass http://127.0.0.1:8888/;
+  }
+
+  ssl_certificate /etc/letsencrypt/live/czartest.teamleftout.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/czartest.teamleftout.org/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  return 301 https://$host$request_uri;
+  server_name czartest.teamleftout.org www.czartest.teamleftout.org;
+}
+
+# egnor.me
+server {
+  server_name dan.egnor.name www.dan.egnor.name egnor.me www.egnor.me;
+  if ($host != 'egnor.me') {
+    return 301 https://egnor.me$request_uri;
+  }
+
+  root /home/egnor/www-danegnor;
+  index index.html;
+  autoindex on;
+
+  rewrite ^/soldier(/.*)?$ https://danegnor.itch.io/red-soldier$1 permanent;
+  rewrite ^/calendar$ https://calendly.com/danegnor permanent;
+  rewrite ^/calendly$ https://calendly.com/danegnor permanent;
+  rewrite ^/freebusy$ https://calendar.google.com/calendar/u/0?cid=ZGFuLmVnbm9yQGdtYWlsLmNvbQ permanent;
+
+  listen [::]:443 ipv6only=on ssl default;
+  listen 443 ssl default;
+  ssl_certificate /etc/letsencrypt/live/dan.egnor.name/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/dan.egnor.name/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80 ipv6only=on default;
+  listen 80 default;
+  server_name dan.egnor.name www.dan.egnor.name egnor.me www.egnor.me;
+  return 301 https://egnor.me$request_uri;
+}
+
+# escaperooms.fun
+server {
+  server_name escaperooms.fun www.escaperooms.fun;
+  return 301 https://discord.com/invite/GNsaSUJ;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/escaperooms.fun/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/escaperooms.fun/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  return 301 https://$host$request_uri;
+  server_name escaperooms.fun www.escaperooms.fun;
+}
+
+# gaslightle.fun
+server {
+  listen [::]:80;
+  listen 80;
+  # return 301 https://$host$request_uri;
+  root /home/egnor/www-gaslightle;
+  server_name gaslightle.fun www.gaslightle.fun;
+}
+
+# gorey.games
+server {
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  server_name gorey.games www.gorey.games;
+  root /home/egnor/www-gorey;
+
+  ssl_certificate /etc/letsencrypt/live/gorey.games/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/gorey.games/privkey.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  return 301 https://$host$request_uri;
+  server_name gorey.games www.gorey.games;
+}
+
+# nutrimatic
+server {
+  server_name nutrimatic.org www.nutrimatic.org;
+
+  gzip off;
+  fastcgi_buffering off;
+  fastcgi_connect_timeout 5s;
+  fastcgi_send_timeout 30s;
+  fastcgi_read_timeout 300s;
+
+  # Limit concurrent FastCGI requests (fcgiwrap has 10 workers)
+  limit_conn perserver 8;
+  limit_conn_status 503;
+
+  location / {
+    rewrite ^/(.*)$ https://nutrimatic.org/2024/$1 redirect;
+  }
+
+  location /2016 {
+    alias /home/egnor/prod-nutrimatic/web_static/;
+    location = /2016/ {
+      fastcgi_pass unix:/var/run/fcgiwrap.socket;
+      include /etc/nginx/fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME /home/egnor/prod-nutrimatic/cgi_scripts/cgi-search.py;
+      fastcgi_param NUTRIMATIC_FIND_EXPR /home/egnor/prod-nutrimatic/bin/find-expr;
+      fastcgi_param NUTRIMATIC_INDEX /home/egnor/prod-nutrimatic/prod-2016.index;
+    }
+  }
+
+  location /2024 {
+    alias /home/egnor/prod-nutrimatic/web_static/;
+    location = /2024/ {
+      fastcgi_pass unix:/var/run/fcgiwrap.socket;
+      include /etc/nginx/fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME /home/egnor/prod-nutrimatic/cgi_scripts/cgi-search.py;
+      fastcgi_param NUTRIMATIC_FIND_EXPR /home/egnor/prod-nutrimatic/bin/find-expr;
+      fastcgi_param NUTRIMATIC_INDEX /home/egnor/prod-nutrimatic/prod-2024.index;
+    }
+  }
+
+  location /staging {
+    alias /home/egnor/staging/web_static/;
+    location = /staging/ {
+      fastcgi_pass unix:/var/run/fcgiwrap.socket;
+      include /etc/nginx/fastcgi_params;
+      fastcgi_param SCRIPT_FILENAME /home/egnor/staging-nutrimatic/cgi_scripts/cgi-search.py;
+      fastcgi_param NUTRIMATIC_FIND_EXPR /home/egnor/staging-nutrimatic/bin/find-expr;
+      fastcgi_param NUTRIMATIC_INDEX /home/egnor/staging-nutrimatic/wiki-merged.index;
+    }
+  }
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+  ssl_prefer_server_ciphers on;
+  ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+  ssl_certificate /etc/letsencrypt/live/nutrimatic.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/nutrimatic.org/privkey.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  server_name nutrimatic.org www.nutrimatic.org;
+  return 301 https://nutrimatic.org$request_uri;
+}
+
+# oakland.af
+server {
+  server_name oakland.af www.oakland.af 510.af www.510.af;
+  root /home/egnor/www-oakland;
+
+  rewrite (?i)^/gerald$ https://oaklandside.org/2020/11/20/we-need-to-talk-about-gerald/ permanent;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  server_name oakland.af www.oakland.af 510.af www.510.af;
+
+  if ($host = www.510.af) { return 301 https://$host$request_uri; }
+  if ($host = 510.af)     { return 301 https://$host$request_uri; }
+  return 301 https://$host$request_uri;
+}
+
+# puzzlehuntcalendar and friends
+server {
+  server_name isthereapuzzlehuntthisweekend.com;
+  server_name isthereapuzzlehunttoday.com;
+  server_name isthereapuzzlehunttomorrow.com;
+  server_name puzzlehuntcalendar.com;
+  server_name puzzlehuntcalendar.org;
+  server_name puzzlehunts.org;
+  server_name www.isthereapuzzlehuntthisweekend.com;
+  server_name www.isthereapuzzlehunttoday.com;
+  server_name www.isthereapuzzlehunttomorrow.com;
+  server_name www.puzzlehuntcalendar.com;
+  server_name www.puzzlehuntcalendar.org;
+  server_name www.puzzlehunts.org;
+
+  root /home/egnor/www-puzzlehuntcalendar;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/puzzlehunts.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/puzzlehunts.org/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  server_name .isthereapuzzlehuntthisweekend.com;
+  server_name .isthereapuzzlehunttoday.com;
+  server_name .isthereapuzzlehunttomorrow.com;
+  server_name .puzzlehuntcalendar.com;
+  server_name .puzzlehuntcalendar.org;
+  server_name .puzzlehunts.org;
+  listen [::]:80;
+  listen 80;
+  return 301 https://puzzlehuntcalendar.com$request_uri;
+}
+
+# plague.wtf
+server {
+  server_name plague.wtf www.plague.wtf;
+  root /home/egnor/www-plague;
+
+  # Keep URLs clean
+  rewrite ^(.*)/index(?:\.html|/)?$ $1/ permanent;
+  try_files $uri.html $uri @index;
+
+  location @index {
+    rewrite ^(.*[^/])$ $1/ permanent;
+    try_files ${uri}index.html =404;
+  }
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/plague.wtf/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/plague.wtf/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  return 301 https://plague.wtf$request_uri;
+  server_name plague.wtf www.plague.wtf covid.ofb.net www.covid.ofb.net;
+}
+
+# prexcytgo
+server {
+  server_name prexcytgo.com www.prexcytgo.com;
+  root /home/egnor/www-prexcytgo;
+
+  location ~.*\.cgi {
+    fastcgi_pass unix:/var/run/fcgiwrap.socket;
+    fastcgi_connect_timeout 5s;
+    fastcgi_send_timeout 30s;
+    fastcgi_read_timeout 60s;
+    include /etc/nginx/fastcgi_params;
+  }
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/prexcytgo.com-0002/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/prexcytgo.com-0002/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
+
+server {
+  listen [::]:80;
+  listen 80;
+  return 301 https://$host$request_uri;
+  server_name prexcytgo.com www.prexcytgo.com;
+}

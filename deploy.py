@@ -1,12 +1,11 @@
 # Top-level PyInfra deploy: runs for every host in the inventory.
 #
-#   pyinfra @local deploy.py            # this machine, no SSH
-#   pyinfra inventory.py deploy.py      # whole fleet
-#   pyinfra inventory.py deploy.py --dry  # preview without applying
+#   pyinfra @local deploy.py         # this machine, no SSH
+#   pyinfra eacs.io deploy.py        # remote machine over SSH
+#   pyinfra eacs.io deploy.py --dry  # preview without applying
 
-from pyinfra import host, local
+from pyinfra import local
 
-local.include("tasks/dotfiles_symlinks.py")
-
-if "system_admin" in host.groups:
-    local.include("tasks/system_tweaks.py")
+local.include("common/user_setup.py")
+local.include("common/system_tweaks.py")
+local.include("nginx/setup.py")
