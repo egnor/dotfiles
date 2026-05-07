@@ -5,8 +5,8 @@
 #
 # The sasldb itself (live secret, plaintext-equivalent passwords because of
 # CRAM-MD5/DIGEST-MD5) is NOT in the repo — see CLAUDE.md for the
-# saslpasswd2 workflow. This area only syncs the canonical /etc/sasldb2 into
-# postfix's chroot copy so a single `saslpasswd2` write takes effect.
+# saslpasswd2 workflow. /etc/sasldb2 is symlinked to the chroot copy so the
+# cyrus-sasl tools (which default to /etc/sasldb2) work unmodified.
 
 from pyinfra import host
 from pyinfra.facts.server import Hostname
@@ -85,19 +85,14 @@ if host.get_fact(Hostname) == "egnor-2020":
         _if=aliases.did_change,
     )
 
-    # `saslpasswd2` writes /etc/sasldb2; postfix (chrooted) reads
-    # /var/spool/postfix/etc/sasldb2. Sync the chroot copy when /etc/ is
-    # newer. Inner shell test makes this a no-op when already in sync.
-    # sasldb is read per-auth, so no postfix reload is needed afterward.
-    server.shell(
-        name="postfix: sync sasldb2 into chroot",
-        commands=[
-            "if [ /etc/sasldb2 -nt /var/spool/postfix/etc/sasldb2 ]; then "
-            "cp -p /etc/sasldb2 /var/spool/postfix/etc/sasldb2 && "
-            "chown postfix:sasl /var/spool/postfix/etc/sasldb2 && "
-            "chmod 660 /var/spool/postfix/etc/sasldb2; "
-            "fi"
-        ],
+    # cyrus-sasl tools default to /etc/sasldb2; postfix (chrooted) reads
+    # /var/spool/postfix/etc/sasldb2. Symlink so they're the same file —
+    # `saslpasswd2 -c -u <realm> <user>` then takes effect immediately,
+    # no separate sync step needed (sasldb is read per-auth anyway).
+    files.link(
+        name="postfix: /etc/sasldb2 → chroot copy",
+        path="/etc/sasldb2",
+        target="/var/spool/postfix/etc/sasldb2",
         _sudo=True,
     )
 

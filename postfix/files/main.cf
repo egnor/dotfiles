@@ -40,9 +40,9 @@ smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 
 # === SASL auth ===
 # The sasldb lives at /var/spool/postfix/etc/sasldb2 because postfix chroots;
+# /etc/sasldb2 is a symlink there so cyrus-sasl tools work unmodified.
 # /etc/postfix/sasl/smtpd.conf controls the cyrus-sasl plugin selection.
 # To set a password: `sudo saslpasswd2 -c -u $(postconf -h myhostname) <user>`
-# (writes /etc/sasldb2; pyinfra deploy syncs it into the chroot).
 smtpd_sasl_auth_enable = yes
 smtpd_sasl_security_options = noanonymous, noplaintext
 smtpd_sasl_tls_security_options = noanonymous
