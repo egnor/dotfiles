@@ -3,6 +3,7 @@
 # cara.vision
 server {
   server_name cara.vision www.cara.vision;
+  include /etc/nginx/snippets/acme-challenge.conf;
   if ($host != 'cara.vision') {
     return 301 https://cara.vision$request_uri;
   }
@@ -24,6 +25,7 @@ server {
 # competent.services
 server {
   server_name approximately.competent.services www.approximately.competent.services competent.services www.competent.services egnor.approximately.competent.services www.egnor.approximately.competent.services eacs.io www.eacs.io egnor.io www.egnor.io egnor.services www.egnor.services;
+  include /etc/nginx/snippets/acme-challenge.conf;
   if ($host != 'approximately.competent.services') {
     return 301 https://approximately.competent.services$request_uri;
   }
@@ -49,9 +51,10 @@ server {
 
 # czartest
 server {
+  server_name czartest.teamleftout.org www.czartest.teamleftout.org;
+  include /etc/nginx/snippets/acme-challenge.conf;
   listen [::]:443 ssl;
   listen 443 ssl;
-  server_name czartest.teamleftout.org www.czartest.teamleftout.org;
   root /home/egnor/www-czartest;
   index index.html;
 
@@ -76,6 +79,7 @@ server {
 # egnor.me
 server {
   server_name dan.egnor.name www.dan.egnor.name egnor.me www.egnor.me;
+  include /etc/nginx/snippets/acme-challenge.conf;
   if ($host != 'egnor.me') {
     return 301 https://egnor.me$request_uri;
   }
@@ -104,13 +108,17 @@ server {
   return 301 https://egnor.me$request_uri;
 }
 
-# escaperooms.fun
+# escaperooms.fun — restructured: server-level `return 301` would short-circuit
+# the ACME location, so the redirect lives in `location /`.
 server {
   server_name escaperooms.fun www.escaperooms.fun;
-  return 301 https://discord.com/invite/GNsaSUJ;
-
+  include /etc/nginx/snippets/acme-challenge.conf;
   listen [::]:443 ssl;
   listen 443 ssl;
+  location / {
+    return 301 https://discord.com/invite/GNsaSUJ;
+  }
+
   ssl_certificate /etc/letsencrypt/live/escaperooms.fun/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/escaperooms.fun/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
@@ -135,9 +143,10 @@ server {
 
 # gorey.games
 server {
+  server_name gorey.games www.gorey.games;
+  include /etc/nginx/snippets/acme-challenge.conf;
   listen [::]:443 ssl;
   listen 443 ssl;
-  server_name gorey.games www.gorey.games;
   root /home/egnor/www-gorey;
 
   ssl_certificate /etc/letsencrypt/live/gorey.games/fullchain.pem;
@@ -154,6 +163,7 @@ server {
 # nutrimatic
 server {
   server_name nutrimatic.org www.nutrimatic.org;
+  include /etc/nginx/snippets/acme-challenge.conf;
 
   gzip off;
   fastcgi_buffering off;
@@ -218,15 +228,16 @@ server {
   return 301 https://nutrimatic.org$request_uri;
 }
 
-# oakland.af
+# oakland.af (.af domains are dead; stanzas kept for now, snippet still added)
 server {
   server_name oakland.af www.oakland.af 510.af www.510.af;
+  include /etc/nginx/snippets/acme-challenge.conf;
+  listen [::]:443 ssl;
+  listen 443 ssl;
   root /home/egnor/www-oakland;
 
   rewrite (?i)^/gerald$ https://oaklandside.org/2020/11/20/we-need-to-talk-about-gerald/ permanent;
 
-  listen [::]:443 ssl;
-  listen 443 ssl;
   ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
@@ -257,6 +268,7 @@ server {
   server_name www.puzzlehuntcalendar.com;
   server_name www.puzzlehuntcalendar.org;
   server_name www.puzzlehunts.org;
+  include /etc/nginx/snippets/acme-challenge.conf;
 
   root /home/egnor/www-puzzlehuntcalendar;
 
@@ -283,6 +295,7 @@ server {
 # plague.wtf
 server {
   server_name plague.wtf www.plague.wtf;
+  include /etc/nginx/snippets/acme-challenge.conf;
   root /home/egnor/www-plague;
 
   # Keep URLs clean
@@ -312,6 +325,7 @@ server {
 # prexcytgo
 server {
   server_name prexcytgo.com www.prexcytgo.com;
+  include /etc/nginx/snippets/acme-challenge.conf;
   root /home/egnor/www-prexcytgo;
 
   location ~.*\.cgi {

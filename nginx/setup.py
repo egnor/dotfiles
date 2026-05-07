@@ -16,6 +16,16 @@ if host.get_fact(Hostname) == "egnor-2020":
         _sudo=True,
     )
 
+    snippets = files.sync(
+        name="snippets/",
+        src="nginx/files/snippets",
+        dest="/etc/nginx/snippets",
+        mode="644",
+        # snippets/ ships package files (fastcgi-php.conf, snakeoil.conf);
+        # don't delete those — only add ours.
+        _sudo=True,
+    )
+
     sites = files.sync(
         name="sites-enabled/",
         src="nginx/files/sites-enabled",
@@ -25,10 +35,20 @@ if host.get_fact(Hostname) == "egnor-2020":
         _sudo=True,
     )
 
+    # Webroot used by certbot for HTTP-01 challenges. The acme-challenge
+    # snippet (included in every :443 server) serves /.well-known/... from
+    # this directory.
+    files.directory(
+        name="ACME webroot",
+        path="/var/www/letsencrypt",
+        mode="755",
+        _sudo=True,
+    )
+
     systemd.service(
         name="Reload nginx if any config changed",
         service="nginx.service",
         reloaded=True,
         _sudo=True,
-        _if=any_changed(nginx_conf, sites),
+        _if=any_changed(nginx_conf, snippets, sites),
     )

@@ -3,6 +3,7 @@
 
 server {
     server_name blackletterlabs.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
     rewrite ^/admin(/(.*))? https://api.blackletterlabs.com/_/$2;
@@ -23,6 +24,7 @@ server {
 
 server {
     server_name iap.blackletterlabs.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
     rewrite ^/pb(/(.*))? https://api.blackletterlabs.com/_/$2;
@@ -44,11 +46,16 @@ server {
     return 301 https://iap.blackletterlabs.com$request_uri;
 }
 
+# admin.blackletterlabs.com — restructured: server-level `return 301` would
+# short-circuit the ACME location, so the redirect lives in `location /`.
 server {
     server_name admin.blackletterlabs.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
-    return 301 https://iap.blackletterlabs.com/admin.html;
+    location / {
+        return 301 https://iap.blackletterlabs.com/admin.html;
+    }
 
     ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
@@ -56,13 +63,17 @@ server {
 
 server {
     server_name admin.blackletterlabs.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:80;
     listen 80;
-    return 301 https://iap.blackletterlabs.com/admin.html;
+    location / {
+        return 301 https://iap.blackletterlabs.com/admin.html;
+    }
 }
 
 server {
     server_name api.blackletterlabs.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
     location / {
@@ -76,9 +87,12 @@ server {
 
 server {
     server_name www.blackletterlabs.com blackletterlab.com www.blackletterlab.com blacklettergame.com www.blacklettergame.com blackletterfortress.com www.blackletterfortress.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
-    return 301 https://blackletterlabs.com$request_uri;
+    location / {
+        return 301 https://blackletterlabs.com$request_uri;
+    }
 
     ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
@@ -93,6 +107,7 @@ server {
 
 server {
     server_name seventeengames.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
 
@@ -110,9 +125,12 @@ server {
 
 server {
     server_name www.seventeengames.com 0b10001.com www.0b10001.com;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
-    return 301 https://seventeengames.com$request_uri;
+    location / {
+        return 301 https://seventeengames.com$request_uri;
+    }
 
     ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
@@ -127,6 +145,7 @@ server {
 
 server {
     server_name 17g.io www.17g.io;
+    include /etc/nginx/snippets/acme-challenge.conf;
     listen [::]:443 ssl;
     listen 443 ssl;
 

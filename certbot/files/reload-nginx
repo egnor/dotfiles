@@ -1,0 +1,8 @@
+#!/bin/sh
+# Managed by pyinfra. Source: dotfiles/certbot/files/reload-nginx
+# Runs after each successful certbot renewal. Reloads nginx so it picks up
+# refreshed certs. No-op if nginx isn't running on this host.
+
+if systemctl is-active --quiet nginx; then
+    systemctl reload nginx
+fi

@@ -10,6 +10,7 @@ server {
 
 server {
     server_name teamleftout.org www.teamleftout.org;
+    include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/www.teamleftout.org;
     index index.html;
 
@@ -31,6 +32,7 @@ server {
 
 server {
     server_name czar.teamleftout.org www.czar.teamleftout.org;
+    include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/czar.teamleftout.org;
     index index.html;
 
@@ -60,6 +62,7 @@ server {
 
 server {
     server_name czarchat.teamleftout.org www.czarchat.teamleftout.org;
+    include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/czarchat.teamleftout.org;
     index index.html;
 
@@ -84,9 +87,10 @@ server {
 
 # jolly.teamleftout.org
 server {
+  server_name jolly.teamleftout.org jollyroger.teamleftout.org jolly-roger.teamleftout.org jr.teamleftout.org roger.teamleftout.org;
+  include /etc/nginx/snippets/acme-challenge.conf;
   listen [::]:443 ssl;
   listen 443 ssl;
-  server_name jolly.teamleftout.org jollyroger.teamleftout.org jolly-roger.teamleftout.org jr.teamleftout.org roger.teamleftout.org;
 
   if ($host != 'jolly.teamleftout.org') {
     return 301 https://jolly.teamleftout.org$request_uri;
