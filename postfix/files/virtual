@@ -1,0 +1,33 @@
+# Source for /etc/postfix/virtual. pyinfra runs `postmap` on change to
+# regenerate /etc/postfix/virtual.db. Routes mail for the domains listed in
+# main.cf's virtual_alias_domains.
+
+postmaster@blackletterlabs.com    postmaster
+admin@blackletterlabs.com    drain.teaser@gmail.com,egnor@ofb.net,elkin.tat@gmail.com
+certiorari@blackletterlabs.com    admin@blackletterlabs.com
+debellatio@blackletterlabs.com    admin@blackletterlabs.com
+dogs@blackletterlabs.com    admin@blackletterlabs.com
+exparte@blackletterlabs.com    admin@blackletterlabs.com
+gravamen@blackletterlabs.com    admin@blackletterlabs.com
+iap@blackletterlabs.com    admin@blackletterlabs.com
+info@blackletterlabs.com    admin@blackletterlabs.com
+nullius@blackletterlabs.com    admin@blackletterlabs.com
+pedens@blackletterlabs.com    admin@blackletterlabs.com
+pendens@blackletterlabs.com    admin@blackletterlabs.com
+warranto@blackletterlabs.com    admin@blackletterlabs.com
+
+postmaster@seventeengames.com    postmaster
+admin@seventeengames.com    drain.teaser@gmail.com,egnor@ofb.net,elkin.tat@gmail.com
+info@seventeengames.com    admin@seventeengames.com
+shop@seventeengames.com    admin@seventeengames.com
+support@seventeengames.com    admin@seventeengames.com
+
+postmaster@approximately.competent.services    postmaster
+admin@approximately.competent.services    egnor@ofb.net
+info@approximately.competent.services    egnor@ofb.net
+egnor@approximately.competent.services    egnor@ofb.net
+
+postmaster@eacs.io    postmaster
+admin@eacs.io    egnor@ofb.net
+info@eacs.io    egnor@ofb.net
+egnor@eacs.io    egnor@ofb.net

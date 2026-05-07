@@ -1,0 +1,5 @@
+# Managed by pyinfra. Source: postfix/files/aliases
+# /etc/aliases — local recipient aliases. pyinfra runs `newaliases` on change.
+# See man 5 aliases for format.
+postmaster:    root
+root:          egnor
