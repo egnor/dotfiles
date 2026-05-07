@@ -8,11 +8,9 @@ from pyinfra.operations import files, systemd
 
 # "Ubuntu", "Debian", "Fedora", ... or None on non-Linux
 if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
-    # Passwordless sudo for the sudo group, via a drop-in (safer than editing
-    # /etc/sudoers directly: a malformed drop-in is rejected while the main
-    # sudoers stays valid).
+    # Passwordless sudo for the sudo group, via a drop-in
     files.put(
-        name="sudo group: NOPASSWD",
+        name="sudo: NOPASSWD for sudo group",
         src="tweaks/files/sudo-group-nopasswd",
         dest="/etc/sudoers.d/sudo-group-nopasswd",
         mode="440",  # sudo refuses files writable by group/other
@@ -22,7 +20,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     # packagekitd has a long-standing leak in its apt backend; cap RSS so the
     # cgroup OOM killer reaps it before it drags the box into swap.
     packagekit_drop_in = files.put(
-        name="packagekit memory cap drop-in",
+        name="packagekit: memory cap drop-in",
         src="tweaks/files/packagekit-memory-limit.conf",
         dest="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
         mode="644",
@@ -35,7 +33,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     )
 
     systemd.service(
-        name="Restart packagekit if its drop-in changed",
+        name="packagekit: restart to pick up change",
         service="packagekit.service",
         restarted=True,
         _sudo=True,
