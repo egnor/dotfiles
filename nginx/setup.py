@@ -8,8 +8,6 @@ from pyinfra.operations import files, systemd
 from pyinfra.operations.util import any_changed
 
 if host.get_fact(Hostname) == "egnor-2020":
-    SITES = ["anaulin", "drain-teaser", "egnor", "leftout"]
-
     nginx_conf = files.put(
         name="nginx.conf",
         src="nginx/files/nginx.conf",
@@ -18,21 +16,19 @@ if host.get_fact(Hostname) == "egnor-2020":
         _sudo=True,
     )
 
-    site_changes = [
-        files.put(
-            name=f"site: {site}",
-            src=f"nginx/files/sites-enabled/{site}",
-            dest=f"/etc/nginx/sites-enabled/{site}",
-            mode="644",
-            _sudo=True,
-        )
-        for site in SITES
-    ]
+    sites = files.sync(
+        name="sites-enabled/",
+        src="nginx/files/sites-enabled",
+        dest="/etc/nginx/sites-enabled",
+        mode="644",
+        delete=True,  # remove anything in /etc/nginx/sites-enabled not in repo
+        _sudo=True,
+    )
 
     systemd.service(
         name="Reload nginx if any config changed",
         service="nginx.service",
         reloaded=True,
         _sudo=True,
-        _if=any_changed(nginx_conf, *site_changes),
+        _if=any_changed(nginx_conf, sites),
     )

@@ -6,6 +6,6 @@
 
 from pyinfra import local
 
-local.include("common/user_setup.py")
-local.include("common/system_tweaks.py")
 local.include("nginx/setup.py")
+local.include("user/setup.py")
+local.include("tweaks/setup.py")

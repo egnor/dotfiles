@@ -13,3 +13,6 @@ postinstall = '''
   git lfs pull &&
   uv sync
 '''
+
+[tasks]
+deploy = "pyinfra @local deploy.py"

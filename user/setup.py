@@ -1,7 +1,5 @@
+# Home directory setup that egnor likes.
 # Symlink every leaf under files/ into the target's $HOME.
-# Replaces install.py: same rules (submodules and symlink directories are
-# treated as leaves, not recursed into), but each link is a single
-# idempotent files.link call instead of hand-rolled os.symlink/readlink.
 
 import os
 from pathlib import Path
@@ -47,6 +45,6 @@ if home := host.get_fact(Home):
         files.link(
             name=str(rel),
             path=f"{home}/{rel}",
-            target=f"{repo_on_host}/home/files/{rel}",
+            target=f"{repo_on_host}/user/files/{rel}",
             create_remote_dir=True,
         )
