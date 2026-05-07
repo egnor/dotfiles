@@ -8,5 +8,6 @@ from pyinfra import local
 
 local.include("nginx/setup.py")
 local.include("certbot/setup.py")
+local.include("netdata/setup.py")
 local.include("user/setup.py")
 local.include("tweaks/setup.py")

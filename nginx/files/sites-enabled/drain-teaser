@@ -78,7 +78,9 @@ server {
     listen 443 ssl;
     location / {
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_pass http://localhost:8090;
+        # Pin to IPv4 — PocketBase listens on 127.0.0.1:8090, but `localhost`
+        # was resolving to [::1] and producing 502s for real clients.
+        proxy_pass http://127.0.0.1:8090;
     }
 
     ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;

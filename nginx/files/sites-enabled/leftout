@@ -85,7 +85,10 @@ server {
     return 301 https://leftout.slack.com$request_uri;
 }
 
-# jolly.teamleftout.org
+# jolly.teamleftout.org — Jolly Roger app for an annual event; the upstream
+# on :3000 is offline most of the year. Map upstream-down errors to a 200
+# placeholder so the parade of bot probes against this domain doesn't show
+# up as 5xx noise in monitoring.
 server {
   server_name jolly.teamleftout.org jollyroger.teamleftout.org jolly-roger.teamleftout.org jr.teamleftout.org roger.teamleftout.org;
   include /etc/nginx/snippets/acme-challenge.conf;
@@ -96,7 +99,12 @@ server {
     return 301 https://jolly.teamleftout.org$request_uri;
   }
   location / {
+    error_page 502 503 504 = @offline;
     proxy_pass http://127.0.0.1:3000/;
+  }
+  location @offline {
+    default_type text/plain;
+    return 200 "Jolly Roger is offline outside event season.\n";
   }
 
   ssl_certificate /etc/letsencrypt/live/jolly.teamleftout.org/fullchain.pem;

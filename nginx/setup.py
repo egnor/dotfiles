@@ -21,6 +21,7 @@ if host.get_fact(Hostname) == "egnor-2020":
         src="nginx/files/snippets",
         dest="/etc/nginx/snippets",
         mode="644",
+        dir_mode="755",  # default `mode` is also applied to dirs — explicitly set so traversal works.
         # snippets/ ships package files (fastcgi-php.conf, snakeoil.conf);
         # don't delete those — only add ours.
         _sudo=True,
@@ -31,6 +32,7 @@ if host.get_fact(Hostname) == "egnor-2020":
         src="nginx/files/sites-enabled",
         dest="/etc/nginx/sites-enabled",
         mode="644",
+        dir_mode="755",
         delete=True,  # remove anything in /etc/nginx/sites-enabled not in repo
         _sudo=True,
     )
