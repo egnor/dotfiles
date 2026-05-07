@@ -1,0 +1,15 @@
+[tools]
+python = "3.12"
+uv = "0.10"
+
+[settings]
+experimental = true
+python.uv_venv_auto = "create|source"
+
+[hooks]
+postinstall = '''
+  cd {{config_root}} &&
+  git lfs install --local &&
+  git lfs pull &&
+  uv sync
+'''
