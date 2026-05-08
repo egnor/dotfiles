@@ -6,9 +6,12 @@ uv = "0.10"
 experimental = true
 python.uv_venv_auto = "create|source"
 
+[env]
+PROJECT_TOP = "{{config_root}}"
+
 [hooks]
 postinstall = '''
-  cd {{config_root}} &&
+  cd "$PROJECT_TOP" &&
   git lfs install --local &&
   git lfs pull &&
   uv sync

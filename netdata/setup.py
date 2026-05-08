@@ -13,46 +13,38 @@ from pyinfra.operations.util import any_changed
 if host.get_fact(Directory, "/etc/netdata"):
     role = "parent" if host.get_fact(Hostname) == "egnor-2020" else "child"
 
-    netdata_conf = files.put(
-        name=f"netdata.conf ({role})",
-        src=f"netdata/files/{role}/netdata.conf",
-        dest="/etc/netdata/netdata.conf",
-        mode="644",
-        _sudo=True,
-    )
-
-    stream_conf = files.put(
-        name=f"stream.conf ({role})",
-        src=f"netdata/files/{role}/stream.conf",
-        dest="/etc/netdata/stream.conf",
-        mode="644",
-        _sudo=True,
-    )
-
-    # Parent-only: alert template overrides under /etc/netdata/health.d/
-    # (children have [health] enabled = no, so they don't read these).
-    # Additive sync — leave room for one-off `edit-config` drops.
-    health_d = None
-    if role == "parent":
-        health_d = files.sync(
-            name="health.d/ overrides",
-            src="netdata/files/parent/health.d",
+    ops = [
+        files.put(
+            name=f"netdata.conf ({role})",
+            src=f"netdata/files.{role}/netdata.conf",
+            dest="/etc/netdata/netdata.conf",
+            mode="644",
+            _sudo=True,
+        ),
+        files.put(
+            name=f"stream.conf ({role})",
+            src=f"netdata/files.{role}/stream.conf",
+            dest="/etc/netdata/stream.conf",
+            mode="644",
+            _sudo=True,
+        ),
+        files.sync(
+            name=f"health.d/ overrides ({role})",
+            src=f"netdata/files.{role}/health.d",
             dest="/etc/netdata/health.d",
             mode="644",
             dir_mode="755",
             _sudo=True,
-        )
+        ),
+    ]
 
     # netdata.conf / stream.conf changes need a real restart; health.d/
     # changes alone could use `netdatacli reload-health`, but bundling
     # them into the restart trigger is simpler and still cheap.
-    triggers = [netdata_conf, stream_conf]
-    if health_d is not None:
-        triggers.append(health_d)
     systemd.service(
         name="Restart netdata if config changed",
         service="netdata.service",
         restarted=True,
         _sudo=True,
-        _if=any_changed(*triggers),
+        _if=any_changed(*ops),
     )
