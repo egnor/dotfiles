@@ -17,9 +17,9 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
         _sudo=True,
     )
 
-    # packagekitd has a long-standing leak in its apt backend; cap RSS so the
+    # packagekitd's apt backend has a long-standing leak ; cap RSS so the
     # cgroup OOM killer reaps it before it drags the box into swap.
-    packagekit_drop_in = files.put(
+    packagekit_update = files.put(
         name="packagekit: memory cap drop-in",
         src="tweaks/files/packagekit-memory-limit.conf",
         dest="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
@@ -29,7 +29,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
 
     systemd.daemon_reload(
         _sudo=True,
-        _if=packagekit_drop_in.did_change,
+        _if=packagekit_update.did_change,
     )
 
     systemd.service(
@@ -37,5 +37,5 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
         service="packagekit.service",
         restarted=True,
         _sudo=True,
-        _if=packagekit_drop_in.did_change,
+        _if=packagekit_update.did_change,
     )

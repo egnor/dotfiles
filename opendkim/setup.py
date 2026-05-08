@@ -13,50 +13,49 @@ from pyinfra.operations import files, systemd
 from pyinfra.operations.util import any_changed
 
 if host.get_fact(Hostname) == "egnor-2020":
-    opendkim_conf = files.put(
-        name="opendkim: opendkim.conf",
-        src="opendkim/files/opendkim.conf",
-        dest="/etc/opendkim.conf",
-        mode="644",
-        _sudo=True,
-    )
-
-    # /etc/dkimkeys/ is mode 700 owned by opendkim — files.put runs as root
-    # via sudo so it can write inside, then we re-set owner=opendkim.
-    key_table = files.put(
-        name="opendkim: key.table",
-        src="opendkim/files/key.table",
-        dest="/etc/dkimkeys/key.table",
-        user="opendkim",
-        group="opendkim",
-        mode="644",
-        _sudo=True,
-    )
-
-    signing_table = files.put(
-        name="opendkim: signing.table",
-        src="opendkim/files/signing.table",
-        dest="/etc/dkimkeys/signing.table",
-        user="opendkim",
-        group="opendkim",
-        mode="644",
-        _sudo=True,
-    )
-
-    trusted_hosts = files.put(
-        name="opendkim: trusted.hosts",
-        src="opendkim/files/trusted.hosts",
-        dest="/etc/dkimkeys/trusted.hosts",
-        user="opendkim",
-        group="opendkim",
-        mode="644",
-        _sudo=True,
-    )
+    config_updates = [
+        files.put(
+            name="opendkim: opendkim.conf",
+            src="opendkim/files/opendkim.conf",
+            dest="/etc/opendkim.conf",
+            mode="644",
+            _sudo=True,
+        ),
+        # /etc/dkimkeys/ is mode 700 owned by opendkim — files.put runs as root
+        # via sudo so it can write inside, then we re-set owner=opendkim.
+        files.put(
+            name="opendkim: key.table",
+            src="opendkim/files/key.table",
+            dest="/etc/dkimkeys/key.table",
+            user="opendkim",
+            group="opendkim",
+            mode="644",
+            _sudo=True,
+        ),
+        files.put(
+            name="opendkim: signing.table",
+            src="opendkim/files/signing.table",
+            dest="/etc/dkimkeys/signing.table",
+            user="opendkim",
+            group="opendkim",
+            mode="644",
+            _sudo=True,
+        ),
+        files.put(
+            name="opendkim: trusted.hosts",
+            src="opendkim/files/trusted.hosts",
+            dest="/etc/dkimkeys/trusted.hosts",
+            user="opendkim",
+            group="opendkim",
+            mode="644",
+            _sudo=True,
+        ),
+    ]
 
     systemd.service(
         name="opendkim: restart on config change",
         service="opendkim.service",
         restarted=True,
         _sudo=True,
-        _if=any_changed(opendkim_conf, key_table, signing_table, trusted_hosts),
+        _if=any_changed(*config_updates),
     )

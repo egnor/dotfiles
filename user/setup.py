@@ -10,9 +10,7 @@ from pyinfra.operations import files, git
 
 
 def iter_leaves(root: Path):
-    """Yields repo-relative paths for each leaf under root.
-    A leaf is a regular file, a symlink, or a directory containing .git.
-    """
+    """Yields repo-relative paths for each linkable target under root."""
     for dirpath, dirnames, filenames in os.walk(root):
         for d in list(dirnames):
             full = Path(dirpath) / d
@@ -23,27 +21,27 @@ def iter_leaves(root: Path):
             yield (Path(dirpath) / n).relative_to(root)
 
 
-deploy_dir = Path(__file__).resolve().parent
-if home := host.get_fact(Home):
-    # Probe known locations on the target; first existing checkout wins.
-    # If none exist, fall back to ~/dotfiles (where git.repo will clone fresh).
-    candidates = [f"{home}/source/dotfiles", f"{home}/dotfiles"]
-    repo_on_host = next(
-        (p for p in candidates if host.get_fact(Directory, path=f"{p}/.git")),
-        f"{home}/dotfiles",
-    )
+# Probe known locations on the target; first existing checkout wins.
+# If none exist, fall back to ~/dotfiles (where git.repo will clone fresh).
+home = host.get_fact(Home)
+candidates = [f"{home}/source/dotfiles", f"{home}/dotfiles"]
+repo_on_host = next(
+    (p for p in candidates if host.get_fact(Directory, path=f"{p}/.git")),
+    f"{home}/dotfiles",
+)
 
-    # Clones if missing, pulls if present (no-op when local tip == remote tip).
-    git.repo(
-        name="Clone or update dotfiles repo",
-        src="https://github.com/egnor/dotfiles.git",
-        dest=repo_on_host,
-    )
+# Clones if missing, pulls if present (no-op when local tip == remote tip).
+git.repo(
+    name="Clone or update dotfiles repo",
+    src="https://github.com/egnor/dotfiles.git",
+    dest=repo_on_host,
+)
 
-    for rel in sorted(iter_leaves(deploy_dir / "files")):
-        files.link(
-            name=str(rel),
-            path=f"{home}/{rel}",
-            target=f"{repo_on_host}/user/files/{rel}",
-            create_remote_dir=True,
-        )
+files_dir = Path(__file__).parent / "files"
+for rel in sorted(iter_leaves(files_dir)):
+    files.link(
+        name=str(rel),
+        path=f"{home}/{rel}",
+        target=f"{repo_on_host}/user/files/{rel}",
+        create_remote_dir=True,
+    )

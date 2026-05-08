@@ -8,34 +8,34 @@ from pyinfra.operations import files, systemd
 from pyinfra.operations.util import any_changed
 
 if host.get_fact(Hostname) == "egnor-2020":
-    nginx_conf = files.put(
-        name="nginx.conf",
-        src="nginx/files/nginx.conf",
-        dest="/etc/nginx/nginx.conf",
-        mode="644",
-        _sudo=True,
-    )
-
-    snippets = files.sync(
-        name="snippets/",
-        src="nginx/files/snippets",
-        dest="/etc/nginx/snippets",
-        mode="644",
-        dir_mode="755",  # default `mode` is also applied to dirs — explicitly set so traversal works.
+    config_updates = [
+        files.put(
+            name="nginx.conf",
+            src="nginx/files/nginx.conf",
+            dest="/etc/nginx/nginx.conf",
+            mode="644",
+            _sudo=True,
+        ),
         # snippets/ ships package files (fastcgi-php.conf, snakeoil.conf);
         # don't delete those — only add ours.
-        _sudo=True,
-    )
-
-    sites = files.sync(
-        name="sites-enabled/",
-        src="nginx/files/sites-enabled",
-        dest="/etc/nginx/sites-enabled",
-        mode="644",
-        dir_mode="755",
-        delete=True,  # remove anything in /etc/nginx/sites-enabled not in repo
-        _sudo=True,
-    )
+        files.sync(
+            name="snippets/",
+            src="nginx/files/snippets",
+            dest="/etc/nginx/snippets",
+            mode="644",
+            dir_mode="755",  # also applied to dirs
+            _sudo=True,
+        ),
+        files.sync(
+            name="sites-enabled/",
+            src="nginx/files/sites-enabled",
+            dest="/etc/nginx/sites-enabled",
+            mode="644",
+            dir_mode="755",
+            delete=True,  # remove anything not in repo
+            _sudo=True,
+        ),
+    ]
 
     # Webroot used by certbot for HTTP-01 challenges. The acme-challenge
     # snippet (included in every :443 server) serves /.well-known/... from
@@ -52,5 +52,5 @@ if host.get_fact(Hostname) == "egnor-2020":
         service="nginx.service",
         reloaded=True,
         _sudo=True,
-        _if=any_changed(nginx_conf, snippets, sites),
+        _if=any_changed(*config_updates),
     )
