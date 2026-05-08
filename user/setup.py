@@ -3,7 +3,6 @@
 
 import os
 from pathlib import Path
-
 from pyinfra import host
 from pyinfra.facts.files import Directory
 from pyinfra.facts.server import Home

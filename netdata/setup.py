@@ -13,7 +13,7 @@ from pyinfra.operations.util import any_changed
 if host.get_fact(Directory, "/etc/netdata"):
     role = "parent" if host.get_fact(Hostname) == "egnor-2020" else "child"
 
-    ops = [
+    config_updates = [
         files.put(
             name=f"netdata.conf ({role})",
             src=f"netdata/files.{role}/netdata.conf",
@@ -46,5 +46,5 @@ if host.get_fact(Directory, "/etc/netdata"):
         service="netdata.service",
         restarted=True,
         _sudo=True,
-        _if=any_changed(*ops),
+        _if=any_changed(*config_updates),
     )
