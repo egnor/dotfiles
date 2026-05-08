@@ -36,6 +36,14 @@ if host.get_fact(Directory, "/etc/netdata"):
             dir_mode="755",
             _sudo=True,
         ),
+        files.sync(
+            name=f"go.d/ overrides ({role})",
+            src=f"netdata/files.{role}/go.d",
+            dest="/etc/netdata/go.d",
+            mode="644",
+            dir_mode="755",
+            _sudo=True,
+        ),
     ]
 
     # netdata.conf / stream.conf changes need a real restart; health.d/
