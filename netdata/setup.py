@@ -46,6 +46,19 @@ if host.get_fact(Directory, "/etc/netdata"):
         ),
     ]
 
+    # health_alarm_notify.conf is re-sourced by alarm-notify.sh on every
+    # event (alarm-notify.sh.in:519), so changes take effect without a
+    # netdata restart — kept out of the restart trigger below. Parent only:
+    # the parent host is where alarms are evaluated.
+    if role == "parent":
+        files.put(
+            name="health_alarm_notify.conf (parent)",
+            src="netdata/files.parent/health_alarm_notify.conf",
+            dest="/etc/netdata/health_alarm_notify.conf",
+            mode="644",
+            _sudo=True,
+        )
+
     # netdata.conf / stream.conf changes need a real restart; health.d/
     # changes alone could use `netdatacli reload-health`, but bundling
     # them into the restart trigger is simpler and still cheap.
