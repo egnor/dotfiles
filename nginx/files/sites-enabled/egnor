@@ -1,5 +1,27 @@
 # Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/egnor
 
+server {
+  server_name amiobsoleteyet.com www.amiobsoleteyet.com amiobsoleteyet.org www.amiobsoleteyet.org amiobsoleteyet.net www.amiobsoleteyet.net;
+  include /etc/nginx/snippets/acme-challenge.conf;
+  if ($host != 'amiobsoleteyet.com') {
+    return 301 https://amiobsoleteyet.com$request_uri;
+  }
+  root /home/egnor/www-amiobsoleteyet;
+
+  listen [::]:443 ssl;
+  listen 443 ssl;
+  ssl_certificate /etc/letsencrypt/live/amiobsoleteyet.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/amiobsoleteyet.com/privkey.pem;
+}
+
+server {
+  server_name amiobsoleteyet.com www.amiobsoleteyet.com amiobsoleteyet.org www.amiobsoleteyet.org amiobsoleteyet.net www.amiobsoleteyet.net;
+  include /etc/nginx/snippets/acme-challenge.conf;
+  listen [::]:80;
+  listen 80;
+  return 301 https://amiobsoleteyet.com$request_uri;  # enable after cert exists
+}
+
 # cara.vision
 server {
   server_name cara.vision www.cara.vision;
