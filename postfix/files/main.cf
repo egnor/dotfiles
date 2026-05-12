@@ -3,10 +3,11 @@
 
 # === Identity ===
 # This box receives mail for personal + Drain Teaser + EACS domains.
-myorigin = egnor-2020.ofb.net
+# Mail from this machine comes from @eacs.io.
+myorigin = eacs.io
 myhostname = approximately.competent.services
 mydomain = approximately.competent.services
-mydestination = egnor-2020.ofb.net egnor-2020 localhost.localdomain localhost
+mydestination = eacs.io egnor-2020.ofb.net egnor-2020 localhost.localdomain localhost
 smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)
 biff = no
 append_dot_mydomain = no
@@ -25,7 +26,7 @@ smtp_bind_address6 = 2600:3c01:e000:3d3::1
 # === Aliases & virtual delivery ===
 alias_database = hash:/etc/aliases
 alias_maps = regexp:/etc/postfix/aliases_regexp
-virtual_alias_domains = approximately.competent.services blackletterlabs.com eacs.io seventeengames.com
+virtual_alias_domains = approximately.competent.services blackletterlabs.com seventeengames.com
 virtual_alias_maps = hash:/etc/postfix/virtual
 mailbox_size_limit = 0
 recipient_delimiter = +

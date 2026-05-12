@@ -27,7 +27,4 @@ admin@approximately.competent.services    egnor@ofb.net
 info@approximately.competent.services    egnor@ofb.net
 egnor@approximately.competent.services    egnor@ofb.net
 
-postmaster@eacs.io    postmaster
-admin@eacs.io    egnor@ofb.net
-info@eacs.io    egnor@ofb.net
-egnor@eacs.io    egnor@ofb.net
+# eacs.io is now a local destination (mydestination in main.cf)
