@@ -83,7 +83,7 @@ Most zones in `dns/files/zones/` are the boilerplate `apex SOA + $INCLUDE _commo
    $INCLUDE /etc/knot/zones/_common.inc
    ```
 
-2. Add a `zone:` entry to `dns/files/knot.conf` referencing `/etc/knot/zones/<zone>.zone` and `template: default`.
+2. Add the zone name to the `PRIMARY` list in `dns/gen_knot_conf.py`, then run `dns/gen_knot_conf.py` to regenerate `dns/files/knot.conf`. (Don't hand-edit `knot.conf` — the script rewrites it from scratch each run.)
 3. `pyinfra @local deploy.py`. Knot reloads; check `journalctl -u knot --since "1 minute ago"` for parse errors.
 4. **Validate** before pointing real traffic at it:
    ```
@@ -93,6 +93,8 @@ Most zones in `dns/files/zones/` are the boilerplate `apex SOA + $INCLUDE _commo
 5. If the zone needs MX, SPF, DMARC, DKIM, or non-wildcard subdomains, put them *after* the `$INCLUDE` line — explicit records override the wildcard. See `eacs.io.zone` (mail-receiving) and `teamleftout.org.zone` (Google Workspace + custom records) for examples of the deviation patterns.
 
 The SOA serial in the file stays `1` forever. Knot detects content changes via `zonefile-load: difference-no-serial` and writes a real serial (Unix timestamp) into its journal at `/var/lib/knot/`.
+
+`dns/gen_knot_conf.py` regenerates `dns/files/knot.conf` from two inputs: the `PRIMARY` list in the script, and the live reference checkout at `/home/egnor/reference/ofb_config_bind/config.sh` (which the user re-fetches from the actual ofb host whenever its `config.sh` is edited). Every uncommented `^master <zone> ...` line in ofb's config becomes an `ofb_slave`-templated entry here; dual-mastered zones (in both lists) are filtered out automatically. Run the script after editing PRIMARY *or* after re-syncing the ofb reference.
 
 ## BIND9 → Knot first-time cutover
 
