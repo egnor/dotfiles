@@ -171,6 +171,8 @@ server {
   listen 443 ssl;
   root /home/egnor/www-gorey;
 
+  location = / { return 301 /cake/; }
+
   ssl_certificate /etc/letsencrypt/live/gorey.games/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/gorey.games/privkey.pem;
 }
@@ -248,32 +250,6 @@ server {
   listen 80;
   server_name nutrimatic.org www.nutrimatic.org;
   return 301 https://nutrimatic.org$request_uri;
-}
-
-# oakland.af (.af domains are dead; stanzas kept for now, snippet still added)
-server {
-  server_name oakland.af www.oakland.af 510.af www.510.af;
-  include /etc/nginx/snippets/acme-challenge.conf;
-  listen [::]:443 ssl;
-  listen 443 ssl;
-  root /home/egnor/www-oakland;
-
-  rewrite (?i)^/gerald$ https://oaklandside.org/2020/11/20/we-need-to-talk-about-gerald/ permanent;
-
-  ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  server_name oakland.af www.oakland.af 510.af www.510.af;
-
-  if ($host = www.510.af) { return 301 https://$host$request_uri; }
-  if ($host = 510.af)     { return 301 https://$host$request_uri; }
-  return 301 https://$host$request_uri;
 }
 
 # puzzlehuntcalendar and friends

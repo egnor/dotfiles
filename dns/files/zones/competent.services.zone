@@ -1,0 +1,17 @@
+; Managed by pyinfra. Source: dns/files/zones/competent.services.zone
+; The competent.services apex itself doesn't receive mail — the
+; `approximately.competent.services` subdomain is what's in postfix's
+; virtual_alias_domains and what serves the nginx vhost. Single-label
+; wildcard in _common.inc covers `approximately`; this file adds explicit
+; records for `egnor.approximately` (two labels deep, beyond wildcard
+; reach) so the nginx vhost there resolves.
+$ORIGIN competent.services.
+$TTL 1h
+
+@ SOA ns1.eacs.io. hostmaster.eacs.io. ( 1 1h 15m 7d 1h )
+
+$INCLUDE /etc/knot/zones/_common.inc
+
+egnor.approximately 1h A    104.200.25.248
+egnor.approximately 1h AAAA 2600:3c01::f03c:92ff:feeb:cac3
+egnor.approximately 1h AAAA 2600:3c01:e000:3d3::1

@@ -1,0 +1,35 @@
+; Managed by pyinfra. Source: dns/files/zones/teamleftout.org.zone
+; Bespoke — Google Workspace mail, short.cm URL shortener at go.*,
+; puzzletron at ptron.* (CNAMEd off to isotropic.org, with its own DKIM
+; selector for mailgun). Migrated from ofb's teamleftout.zone.
+$ORIGIN teamleftout.org.
+$TTL 1h
+
+@ SOA ns1.eacs.io. hostmaster.eacs.io. ( 1 1h 15m 7d 1h )
+
+$INCLUDE /etc/knot/zones/_common.inc
+
+; Google Workspace mail
+@ 1h MX 10 aspmx.l.google.com.
+@ 1h MX 20 alt1.aspmx.l.google.com.
+@ 1h MX 20 alt2.aspmx.l.google.com.
+@ 1h MX 30 aspmx2.googlemail.com.
+@ 1h MX 30 aspmx3.googlemail.com.
+@ 1h MX 30 aspmx4.googlemail.com.
+@ 1h MX 30 aspmx5.googlemail.com.
+
+@ 1h TXT "v=spf1 a include:_spf.google.com ~all"
+
+; Google Workspace per-service hostnames (Gmail, Calendar, Docs, Sites)
+calendar 1h CNAME ghs.google.com.
+docs     1h CNAME ghs.google.com.
+mail     1h CNAME ghs.google.com.
+sites    1h CNAME ghs.google.com.
+
+; short.cm URL shortener (go.teamleftout.org points at their LB)
+go 1h A 52.21.33.16
+go 1h A 52.2.56.64
+
+; puzzletron, including mailgun.com email-sending on a sub-selector
+ptron                1h CNAME ptron.isotropic.org.
+krs._domainkey.ptron 1h TXT   "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrpFPiRiLMyu0NWDog3L2v/haiJAPSXjYZUOfsdBxjwU2/ILOVoRhAGK1FQARVmO2etgt5CkKsf7PbbDFDs1B1Urs646LoyoPAKBbWJVvMdSwiLx8Jx62JtdiOaFXaE2J7pSK+dr7Lm9xHxMJiYBSUZlHz4+g7AzRbognL3RTjtQIDAQAB"

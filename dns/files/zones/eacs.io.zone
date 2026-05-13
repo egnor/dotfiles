@@ -1,0 +1,25 @@
+; Managed by pyinfra. Source: dns/files/zones/eacs.io.zone
+; Self-hosting zone: this host is in postfix's mydestination, runs the
+; nameserver as ns1.eacs.io, and opendkim signs outgoing with selector "mail".
+$ORIGIN eacs.io.
+$TTL 1h
+
+@ SOA ns1.eacs.io. hostmaster.eacs.io. ( 1 1h 15m 7d 1h )
+
+$INCLUDE /etc/knot/zones/_common.inc
+
+; ns1.eacs.io as explicit A/AAAA so AXFR carries it and resolvers don't
+; have to fall through the wildcard CNAME for the NS host's own glue.
+ns1 1h A    104.200.25.248
+ns1 1h AAAA 2600:3c01::f03c:92ff:feeb:cac3
+ns1 1h AAAA 2600:3c01:e000:3d3::1
+
+; Mail — postfix on this host receives for eacs.io (mydestination).
+@      1h MX  1 eacs.io.
+@      1h TXT "v=spf1 a ~all"
+_dmarc 1h TXT "v=DMARC1; p=quarantine; rua=mailto:info@eacs.io"
+
+; DKIM — public half of /etc/dkimkeys/eacs.io.private. Copied verbatim
+; from current authoritative DNS; keep in sync if the key is rotated
+; (`opendkim-genkey -d eacs.io -s mail -D /etc/dkimkeys/`).
+mail._domainkey 1h TXT ( "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs01Um7mhv30M9umOfYA5Osjdd0oEyWrqka2l6bY5fj8/GrquLtMixtMTLFadgEZXSyCWJMSeO4ythnZUezeCI95tOSHtVe/lWNZBzE/A+XwfRe8/tQIjvVd+CjQdoWDDTN1F26Hvty2q8VmwRZKCVW3u84uVyt4feCdLRLOVat7Ked9GSMLTFObXWKvQWQsWOr8Kodm7XaKojF7QN" "5AMVr8QiHhJXZS61cI4LZpucKZEN4TenNtpQB/ZEYQEDZHKeV/KWvLXXu0WJrSkH02+QdyQYHsFihqSffguZabOC2/y4k24eQLXVnfwn/mW+NTfiAgRUGU+DyVoW+I2afVW5QIDAQAB" )
