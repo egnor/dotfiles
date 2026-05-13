@@ -4,6 +4,7 @@
 
 from pyinfra import host
 from pyinfra.facts.server import LinuxName
+from pyinfra.facts.systemd import SystemdEnabled
 from pyinfra.operations import files, systemd
 
 # "Ubuntu", "Debian", "Fedora", ... or None on non-Linux
@@ -19,23 +20,24 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
 
     # packagekitd's apt backend has a long-standing leak ; cap RSS so the
     # cgroup OOM killer reaps it before it drags the box into swap.
-    packagekit_update = files.put(
-        name="packagekit: memory cap drop-in",
-        src="tweaks/files/packagekit-memory-limit.conf",
-        dest="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
-        mode="644",
-        _sudo=True,
-    )
+    if "packagekit.service" in host.get_fact(SystemdEnabled):
+        packagekit_update = files.put(
+            name="packagekit: memory cap drop-in",
+            src="tweaks/files/packagekit-memory-limit.conf",
+            dest="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
+            mode="644",
+            _sudo=True,
+        )
 
-    systemd.daemon_reload(
-        _sudo=True,
-        _if=packagekit_update.did_change,
-    )
+        systemd.daemon_reload(
+            _sudo=True,
+            _if=packagekit_update.did_change,
+        )
 
-    systemd.service(
-        name="packagekit: restart to pick up change",
-        service="packagekit.service",
-        restarted=True,
-        _sudo=True,
-        _if=packagekit_update.did_change,
-    )
+        systemd.service(
+            name="packagekit: restart to pick up change",
+            service="packagekit.service",
+            restarted=True,
+            _sudo=True,
+            _if=packagekit_update.did_change,
+        )

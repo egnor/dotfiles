@@ -1,0 +1,8 @@
+# Mise tools that need a modern glibc (Node, neovim prebuilts, and anything
+# that runs on Node). Symlinked in only on hosts user/setup.py classifies as
+# "modern" — see that file for the gate.
+
+[tools]
+neovim = "latest"
+node = "24"
+"npm:@github/copilot-language-server" = "latest"

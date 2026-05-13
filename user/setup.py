@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from pyinfra import host
 from pyinfra.facts.files import Directory
-from pyinfra.facts.server import Home
+from pyinfra.facts.server import Home, LsbRelease
 from pyinfra.operations import files, git
 
 
@@ -37,11 +37,19 @@ git.repo(
     dest=repo_on_host,
 )
 
-files_dir = Path(__file__).parent / "files"
-for rel in sorted(iter_leaves(files_dir)):
-    files.link(
-        name=str(rel),
-        path=f"{home}/{rel}",
-        target=f"{repo_on_host}/user/files/{rel}",
-        create_remote_dir=True,
-    )
+# "Modern" hosts (Ubuntu 20.04+) additionally get tools whose prebuilt
+# binaries need a recent glibc — see user/files-modern/.config/mise/conf.d/.
+lsb = host.get_fact(LsbRelease) or {}
+trees = ["files"]
+if lsb.get("id") == "Ubuntu" and int(lsb.get("release", "0").split(".")[0]) >= 20:
+    trees.append("files-modern")
+
+for tree in trees:
+    tree_dir = Path(__file__).parent / tree
+    for rel in sorted(iter_leaves(tree_dir)):
+        files.link(
+            name=f"{tree}/{rel}",
+            path=f"{home}/{rel}",
+            target=f"{repo_on_host}/user/{tree}/{rel}",
+            create_remote_dir=True,
+        )
