@@ -5,3 +5,4 @@ $TTL 1h
 @ SOA ns1.eacs.io. hostmaster.eacs.io. ( 1 1h 15m 7d 1h )
 
 $INCLUDE /etc/knot/zones/_common.inc
+$INCLUDE /etc/knot/zones/_no-email.inc

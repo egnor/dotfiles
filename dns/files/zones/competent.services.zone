@@ -1,13 +1,4 @@
 ; Managed by pyinfra. Source: dns/files/zones/competent.services.zone
-; The competent.services apex itself doesn't receive mail — the
-; `approximately.competent.services` subdomain is what's in postfix's
-; virtual_alias_domains and what serves the nginx vhost. The single-label
-; `* CNAME @` wildcard in _common.inc covers `approximately` itself; this
-; file adds a second wildcard `*.approximately CNAME @` so any two-deep
-; names below approximately (like `www.approximately.competent.services`,
-; which nginx lists in its server_name) also resolve here. Plus explicit
-; A/AAAA at `egnor.approximately` since that's the egnor-personal vhost
-; in nginx.
 $ORIGIN competent.services.
 $TTL 1h
 
@@ -15,13 +6,23 @@ $TTL 1h
 
 $INCLUDE /etc/knot/zones/_common.inc
 
-; `approximately` needs explicit records here because adding any record at
-; `*.approximately` makes `approximately` an empty non-terminal — which
-; prevents the apex-level `* CNAME @` wildcard from matching it.
+; Apex is non-mail (the `approximately` subdomain is the mail-receiving
+; piece — different name, MX is per-name, so the null MX here doesn't
+; affect it). DMARC sp= default is p=, so this also covers any forged
+; mail claiming From: @<anything>.competent.services.
+$INCLUDE /etc/knot/zones/_no-email.inc
+
+; Support [www.][egnor.][approximately.]competent.services;
+; re-state parents because wildcards are blocked by subdomains.
 approximately       1h A     104.200.25.248
 approximately       1h AAAA  2600:3c01::f03c:92ff:feeb:cac3
 approximately       1h AAAA  2600:3c01:e000:3d3::1
-*.approximately     1h CNAME @
+*.approximately     1h A     104.200.25.248
+*.approximately     1h AAAA  2600:3c01::f03c:92ff:feeb:cac3
+*.approximately     1h AAAA  2600:3c01:e000:3d3::1
 egnor.approximately 1h A     104.200.25.248
 egnor.approximately 1h AAAA  2600:3c01::f03c:92ff:feeb:cac3
 egnor.approximately 1h AAAA  2600:3c01:e000:3d3::1
+*.egnor.approximately 1h A     104.200.25.248
+*.egnor.approximately 1h AAAA  2600:3c01::f03c:92ff:feeb:cac3
+*.egnor.approximately 1h AAAA  2600:3c01:e000:3d3::1

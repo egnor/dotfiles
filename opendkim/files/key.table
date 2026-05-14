@@ -1,4 +1,3 @@
 blackletterlabs.com blackletterlabs.com:mail:/etc/dkimkeys/blackletterlabs.com.private
 seventeengames.com seventeengames.com:mail:/etc/dkimkeys/seventeengames.com.private
 eacs.io eacs.io:mail:/etc/dkimkeys/eacs.io.private
-approximately.competent.services approximately.competent.services:mail:/etc/dkimkeys/approximately.competent.services.private
