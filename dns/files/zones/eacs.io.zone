@@ -17,7 +17,7 @@ ns1 1h AAAA 2600:3c01:e000:3d3::1
 ; Mail — postfix on this host receives for eacs.io (mydestination).
 @      1h MX  1 eacs.io.
 @      1h TXT "v=spf1 a ~all"
-_dmarc 1h TXT "v=DMARC1; p=quarantine; rua=mailto:info@eacs.io"
+_dmarc 1h TXT "v=DMARC1; p=quarantine; pct=100; rua=mailto:re+urllbee7d9n@dmarc.postmarkapp.com; sp=none; aspf=r;"
 
 ; DKIM — public half of /etc/dkimkeys/eacs.io.private. Keep in sync if
 ; the key is rotated (`opendkim-genkey -d eacs.io -s mail -D

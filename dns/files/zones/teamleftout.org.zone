@@ -20,6 +20,11 @@ $INCLUDE /etc/knot/zones/_common.inc
 
 @ 1h TXT "v=spf1 a include:_spf.google.com ~all"
 
+; DMARC — start at p=none for observation since multiple flows publish
+; under this zone (Google Workspace at the apex, Mailgun via ptron).
+; Reports go to Postmark; ramp to p=quarantine once they look clean.
+_dmarc 1h TXT "v=DMARC1; p=none; pct=100; rua=mailto:re+ybuydbtiybc@dmarc.postmarkapp.com; sp=none; aspf=r;"
+
 ; Google Workspace per-service hostnames (Gmail, Calendar, Docs, Sites)
 calendar 1h CNAME ghs.google.com.
 docs     1h CNAME ghs.google.com.
