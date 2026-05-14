@@ -1,5 +1,17 @@
 # Managed by pyinfra. Source: postfix/files/aliases
-# /etc/aliases — local recipient aliases. pyinfra runs `newaliases` on change.
-# See man 5 aliases for format.
-postmaster:    root
-root:          egnor
+#
+# This file is deliberately empty of entries.
+#
+# /etc/aliases is NOT in postfix's runtime lookup chain here:
+#   - alias_maps = regexp:/etc/postfix/aliases_regexp   (the only thing
+#     postfix consults for local alias expansion)
+#   - alias_database is unset (default would be hash:/etc/aliases, but
+#     since nothing references that hash at runtime, it doesn't matter)
+#
+# aliases_regexp is a catch-all (`/.*/  egnor@ofb.net`) so every local
+# recipient at a mydestination domain — postmaster, root, admin, info,
+# anything — already forwards to egnor@ofb.net. Adding entries here would
+# be silently ignored.
+#
+# To route a name to a different place, edit aliases_regexp (and put the
+# specific match ahead of the `.*` catch-all).
