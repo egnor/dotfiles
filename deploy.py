@@ -8,6 +8,7 @@ from pyinfra import local
 
 local.include("nginx/setup.py")
 local.include("certbot/setup.py")
+local.include("postsrsd/setup.py")
 local.include("postfix/setup.py")
 local.include("opendkim/setup.py")
 local.include("dns/setup.py")

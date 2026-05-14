@@ -32,6 +32,32 @@ virtual_alias_maps = hash:/etc/postfix/virtual
 mailbox_size_limit = 0
 recipient_delimiter = +
 
+# === Queue retention ===
+# 5-day retention on real outbound mail has rescued us when a downstream
+# misconfiguration took >24h to spot, so we keep it. But null-sender DSNs
+# (our own bounces, mostly backscatter chasing forged spam senders that
+# time out forever) don't deserve the same patience — they pile up by
+# the thousands. `bounce_queue_lifetime` defaults to $maximal_queue_lifetime,
+# so it's split out explicitly here.
+maximal_queue_lifetime = 5d
+bounce_queue_lifetime = 1d
+
+# === Forwarded-mail envelope rewriting (SRS, via postsrsd) ===
+# Mail that gets re-injected for an external recipient (alias_maps or
+# virtual_alias_maps forwarding outward — e.g. root@eacs.io →
+# egnor@ofb.net, admin@blackletterlabs.com → external gmail) would
+# otherwise leave here with the original external envelope-from, which
+# fails SPF at the next hop. postsrsd rewrites those envelope-froms to
+# an SRS-encoded address under eacs.io so SPF aligns; the reverse port
+# decodes SRS-encoded recipients on inbound bounces back to the original
+# sender. Senders at one of OUR domains (eacs.io, blackletterlabs.com,
+# seventeengames.com, approximately.competent.services) are left alone —
+# see postsrsd/files/postsrsd for the exclude list.
+sender_canonical_maps = tcp:127.0.0.1:10001
+sender_canonical_classes = envelope_sender
+recipient_canonical_maps = tcp:127.0.0.1:10002
+recipient_canonical_classes = envelope_recipient
+
 # === TLS ===
 smtpd_tls_cert_file = /etc/letsencrypt/live/competent.services/fullchain.pem
 smtpd_tls_key_file = /etc/letsencrypt/live/competent.services/privkey.pem
