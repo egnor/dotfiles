@@ -9,17 +9,17 @@ RPROMPT=' %(?..%? )%~ %B%m%b'
 [[ "egnor" != "$USERNAME" ]] && PROMPT="%B$USERNAME%b $PROMPT"
 
 if [[ -z "$TERM_FOUND" ]]; then
-  TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
+  export TERMINFO_DIRS=/usr/share/terminfo:/etc/terminfo:/lib/terminfo
   for TERM_SUDO in ${(s:,:)LC_TERM_FALLBACK} ""; do
     infocmp "$TERM_SUDO" &>/dev/null && break
   done
 
-  TERMINFO_DIRS=$HOME/.local/kitty.app/share/terminfo:$TERMINFO_DIRS
+  export TERMINFO_DIRS=$HOME/.local/kitty.app/share/terminfo:$TERMINFO_DIRS
   for TERM_FOUND in ${(s:,:)LC_TERM_FALLBACK} ""; do
-    infocmp "$TERM_FOUND" &> /dev/null && break
+    infocmp "$TERM_FOUND" > /dev/null && break
   done
 
-  export TERM="${TERM_FOUND:-$TERM}" TERMINFO_DIRS TERM_FOUND TERM_SUDO
+  export TERM="${TERM_FOUND:-$TERM}" TERM_FOUND TERM_SUDO
 fi
 
 # Use systemwide fallback for sudo, last fallback for outgoing ssh
