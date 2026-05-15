@@ -16,7 +16,7 @@ if [[ -z "$TERM_FOUND" ]]; then
 
   export TERMINFO_DIRS=$HOME/.local/kitty.app/share/terminfo:$TERMINFO_DIRS
   for TERM_FOUND in ${(s:,:)LC_TERM_FALLBACK} ""; do
-    infocmp "$TERM_FOUND" > /dev/null && break
+    infocmp "$TERM_FOUND" &>/dev/null && break
   done
 
   export TERM="${TERM_FOUND:-$TERM}" TERM_FOUND TERM_SUDO
