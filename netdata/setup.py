@@ -59,6 +59,14 @@ if host.get_fact(Directory, "/etc/netdata"):
             _sudo=True,
         )
 
+    # create this directory to quiet some journal-spam
+    files.directory(
+        name="scripts.d/ directory",
+        path="/etc/netdata/scripts.d",
+        mode="755",
+        _sudo=True,
+    )
+
     # netdata.conf / stream.conf changes need a real restart; health.d/
     # changes alone could use `netdatacli reload-health`, but bundling
     # them into the restart trigger is simpler and still cheap.
