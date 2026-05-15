@@ -55,12 +55,11 @@ PRIMARY = [
 # `egnor-2020.ofb.net` AND its in-zone apex NS set no longer lists
 # `ns2.ofb.net` (or any glue name resolving to our IPs).
 OFB_SLAVES = [
-    # parent NS: ofb.net + egnor-2020.ofb.net; apex NS includes
-    # egnor-2020.glue.mandelson.org (resolves to us via in-zone glue).
+    # parent registrar NS still lists `egnor-2020.ofb.net` (apex NS at ofb has
+    # been updated to list ns1.ofb.net + ns{2..5}.he.net; HE is active as
+    # secondary). Comes off this list once the registrar NS records are flipped
+    # to drop egnor-2020.ofb.net.
     "mandelson.org",
-    # parent NS doesn't route to us, but apex NS is `ns1.ofb.net. ns2.ofb.net.`
-    # -- recursors that pin to apex NS will still send us queries.
-    "bobmandelson.com",
 ]
 
 HEADER = """\
