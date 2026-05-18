@@ -3,9 +3,10 @@
 # inapplicable ones simply skip.
 
 from pyinfra import host
+from pyinfra.facts.files import File
 from pyinfra.facts.server import LinuxName
 from pyinfra.facts.systemd import SystemdEnabled
-from pyinfra.operations import files, systemd
+from pyinfra.operations import files, server, systemd
 
 # "Ubuntu", "Debian", "Fedora", ... or None on non-Linux
 if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
@@ -40,4 +41,26 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
             restarted=True,
             _sudo=True,
             _if=packagekit_update.did_change,
+        )
+
+    # brltty ships udev rules that tag common USB serial adapters as braille
+    # displays, so brltty-udev.service grabs /dev/ttyUSB* the moment one is
+    # plugged in -- inconvenient when the same chips show up on embedded dev
+    # boards. We can't just remove brltty (ubuntu-desktop-minimal Depends on
+    # it), so override the rules file with an empty same-named file in /etc/.
+    # To revert: rm /etc/udev/rules.d/85-brltty.rules && udevadm control --reload
+    if host.get_fact(File, path="/usr/lib/udev/rules.d/85-brltty.rules"):
+        brltty_override = files.put(
+            name="brltty: empty udev rules override",
+            src="tweaks/files/brltty-udev-override.rules",
+            dest="/etc/udev/rules.d/85-brltty.rules",
+            mode="644",
+            _sudo=True,
+        )
+
+        server.shell(
+            name="brltty: reload udev rules",
+            commands=["udevadm control --reload"],
+            _sudo=True,
+            _if=brltty_override.did_change,
         )

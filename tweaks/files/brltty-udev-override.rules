@@ -1,0 +1,10 @@
+# Managed by pyinfra. Source: dotfiles/tweaks/files/brltty-udev-override.rules
+#
+# Empty override for /usr/lib/udev/rules.d/85-brltty.rules. udev gives same-
+# named files in /etc/udev/rules.d/ precedence, so this disables brltty's
+# rules without removing the package -- ubuntu-desktop-minimal Depends on
+# brltty, and removing it cascades into losing the Ubuntu GNOME Shell
+# extensions during release upgrades. The shipped rules tag common USB
+# serial adapters (CP210x, FT232, CH341, ...) as potential braille displays,
+# which makes brltty-udev.service grab them before tools like minicom,
+# picocom, or openocd can claim them for embedded work.
