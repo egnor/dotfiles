@@ -64,3 +64,56 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
             _sudo=True,
             _if=brltty_override.did_change,
         )
+
+if host.get_fact(LinuxName) == "Ubuntu":
+    # Install firefox from packages.mozilla.org instead of the ubuntu-shipped
+    # snap-wrapper deb. Four pieces are needed; the pin alone isn't enough,
+    # because unattended-upgrades reads its OWN origin allowlist rather than
+    # apt's priority pin:
+    #   - the signing key under /etc/apt/keyrings/
+    #   - the deb822 source under /etc/apt/sources.list.d/
+    #   - a Pin-Priority: 1000 in /etc/apt/preferences.d/  (for `apt install`)
+    #   - a snippet adding "packages.mozilla.org:mozilla" to
+    #     Unattended-Upgrade::Allowed-Origins  (for security updates)
+    # Switching an existing snap-firefox install over is a one-time manual
+    # step (`snap remove firefox && apt install firefox`); not done here.
+    files.put(
+        name="mozilla: apt signing key",
+        src="tweaks/files/mozilla-apt-keyring.asc",
+        dest="/etc/apt/keyrings/packages.mozilla.org.asc",
+        mode="644",
+        _sudo=True,
+    )
+
+    files.put(
+        name="mozilla: apt source",
+        src="tweaks/files/mozilla-apt-source.sources",
+        dest="/etc/apt/sources.list.d/mozilla.sources",
+        mode="644",
+        _sudo=True,
+    )
+
+    files.put(
+        name="mozilla: apt pin priority",
+        src="tweaks/files/mozilla-apt-pin",
+        dest="/etc/apt/preferences.d/mozilla",
+        mode="644",
+        _sudo=True,
+    )
+
+    files.put(
+        name="mozilla: unattended-upgrades allowed-origins",
+        src="tweaks/files/mozilla-unattended-upgrades.conf",
+        dest="/etc/apt/apt.conf.d/51unattended-upgrades-mozilla",
+        mode="644",
+        _sudo=True,
+    )
+
+    # Remove any leftover blanket firefox block from unattended-upgrades --
+    # the mozilla source IS where we want updates to come from now.
+    files.file(
+        name="mozilla: drop legacy firefox block",
+        path="/etc/apt/apt.conf.d/52unattended-block-firefox",
+        present=False,
+        _sudo=True,
+    )
