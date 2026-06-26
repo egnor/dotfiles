@@ -67,14 +67,21 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
 
 if host.get_fact(LinuxName) == "Ubuntu":
     # Install firefox from packages.mozilla.org instead of the ubuntu-shipped
-    # snap-wrapper deb. Four pieces are needed; the pin alone isn't enough,
-    # because unattended-upgrades reads its OWN origin allowlist rather than
-    # apt's priority pin:
+    # snap-wrapper deb. Several cooperating pieces are needed; an apt pin alone
+    # is not enough, because unattended-upgrades reads its OWN origin allowlist
+    # rather than apt's priority pin:
     #   - the signing key under /etc/apt/keyrings/
     #   - the deb822 source under /etc/apt/sources.list.d/
-    #   - a Pin-Priority: 1000 in /etc/apt/preferences.d/  (for `apt install`)
-    #   - a snippet adding "packages.mozilla.org:mozilla" to
-    #     Unattended-Upgrade::Allowed-Origins  (for security updates)
+    #   - /etc/apt/preferences.d/mozilla, which does TWO things:
+    #       * Pin-Priority 1000 on the mozilla origin (so `apt install` picks it
+    #         and is allowed to downgrade off the higher-epoch snap stub), and
+    #       * Pin-Priority -1 on Ubuntu-origin firefox, so the snap-transitional
+    #         deb is simply uninstallable and can never be selected.
+    #   - a snippet adding the mozilla origin to Unattended-Upgrade::
+    #     Allowed-Origins, matched by site= (NOT the bare host:suite shorthand,
+    #     which u-u resolves against the repo's bogus Release Origin field and
+    #     so never matches -- that mismatch made u-u "never"-pin mozilla and
+    #     fall back to reinstalling the snap on every run; see that file).
     # Switching an existing snap-firefox install over is a one-time manual
     # step (`snap remove firefox && apt install firefox`); not done here.
     files.put(

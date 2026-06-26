@@ -2,3 +2,15 @@
 Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000
+
+# Belt-and-suspenders: never install Ubuntu's transitional firefox deb at all.
+# It carries an artificial epoch (1:1snap1-0ubuntuN) that sorts ABOVE every
+# real Mozilla version, so anything that goes by version order treats it as the
+# newest firefox. A sub-zero priority makes that origin's firefox uninstallable
+# by apt AND unattended-upgrades regardless of other config, so the snap stub
+# can never sneak back. (The actual u-u regression was the Allowed-Origins
+# mismatch -- see tweaks/files/mozilla-unattended-upgrades.conf -- but this pin
+# guards the result independently.)
+Package: firefox*
+Pin: release o=Ubuntu
+Pin-Priority: -1
