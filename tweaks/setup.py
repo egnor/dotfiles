@@ -65,6 +65,25 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
             _if=brltty_override.did_change,
         )
 
+    # The cloud-init -> cloud-init-base package split left two IDENTICAL
+    # logrotate rules for /var/log/cloud-init*.log (one per package, both under
+    # /etc/logrotate.d/). logrotate aborts its whole run on a duplicate glob, so
+    # logrotate.service failed nightly and NOTHING got rotated. cloud-init-base
+    # owns the live rule; we stub the redundant cloud-init copy. Gated on BOTH
+    # files existing so older Ubuntu (no split, single working rule) is left
+    # alone. See tweaks/files/logrotate-cloud-init-stub for the full rationale.
+    # No reload needed -- logrotate.timer re-reads config on its next run.
+    if host.get_fact(File, path="/etc/logrotate.d/cloud-init") and host.get_fact(
+        File, path="/etc/logrotate.d/cloud-init-base"
+    ):
+        files.put(
+            name="logrotate: stub duplicate cloud-init rule",
+            src="tweaks/files/logrotate-cloud-init-stub",
+            dest="/etc/logrotate.d/cloud-init",
+            mode="644",
+            _sudo=True,
+        )
+
 if host.get_fact(LinuxName) == "Ubuntu":
     # Install firefox from packages.mozilla.org instead of the ubuntu-shipped
     # snap-wrapper deb. Several cooperating pieces are needed; an apt pin alone

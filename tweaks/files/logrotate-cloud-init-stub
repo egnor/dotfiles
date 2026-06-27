@@ -1,0 +1,16 @@
+# Emptied by pyinfra (tweaks/). See tweaks/setup.py.
+#
+# After Ubuntu split the cloud-init package into cloud-init + cloud-init-base,
+# BOTH /etc/logrotate.d/cloud-init and /etc/logrotate.d/cloud-init-base shipped
+# IDENTICAL rules for /var/log/cloud-init*.log. logrotate treats a glob listed
+# twice as a fatal "duplicate log entry" and aborts its ENTIRE run -- so no logs
+# (not just cloud-init's) were getting rotated, and logrotate.service sat failed.
+#
+# cloud-init-base owns the live rule; this file is the redundant copy, so we
+# neuter it to a comment-only placeholder. We only do this where cloud-init-base
+# also exists (i.e. the split happened) -- on older Ubuntu without the split,
+# this file is the ONLY rule and is left untouched.
+#
+# Kept as a placeholder rather than deleted: this is a dpkg conffile, so a future
+# cloud-init upgrade that changes it will raise a conffile prompt instead of
+# silently restoring the duplicate. If upstream fixes the bug, accept their copy.
