@@ -6,3 +6,5 @@
 neovim = "latest"
 node = "24"
 "npm:@github/copilot-language-server" = "latest"
+# tree-sitter CLI is needed by nvim-treesitter to compile parsers
+tree-sitter = "latest"
