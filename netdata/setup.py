@@ -6,12 +6,27 @@
 
 from pyinfra import host
 from pyinfra.facts.files import Directory
-from pyinfra.facts.server import Hostname
-from pyinfra.operations import files, systemd
+from pyinfra.facts.server import Hostname, LinuxName
+from pyinfra.operations import apt, files, systemd
 from pyinfra.operations.util import any_changed
 
 if host.get_fact(Directory, "/etc/netdata"):
     role = "parent" if host.get_fact(Hostname) == "egnor-2020" else "child"
+
+    # smartmontools provides `smartctl`, which the go.d smartctl collector
+    # (go.d/smartctl.conf) shells out to via the setuid ndsudo helper for
+    # SMART disk-health metrics + alerts. Physical hosts get real data;
+    # virtualized hosts (e.g. the GCE parent) expose no SMART devices and
+    # the collector idles. Restarting netdata after a first-time install is
+    # what makes the collector notice smartctl, so it's wired into the
+    # restart trigger below.
+    smart_pkg = None
+    if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
+        smart_pkg = apt.packages(
+            name="smartmontools (smartctl for the netdata SMART collector)",
+            packages=["smartmontools"],
+            _sudo=True,
+        )
 
     config_updates = [
         files.put(
@@ -70,10 +85,14 @@ if host.get_fact(Directory, "/etc/netdata"):
     # netdata.conf / stream.conf changes need a real restart; health.d/
     # changes alone could use `netdatacli reload-health`, but bundling
     # them into the restart trigger is simpler and still cheap.
+    restart_triggers = list(config_updates)
+    if smart_pkg is not None:
+        restart_triggers.append(smart_pkg)
+
     systemd.service(
         name="Restart netdata if config changed",
         service="netdata.service",
         restarted=True,
         _sudo=True,
-        _if=any_changed(*config_updates),
+        _if=any_changed(*restart_triggers),
     )

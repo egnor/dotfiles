@@ -28,8 +28,7 @@ Each top-level subdirectory is one *area*: a `setup.py` plus a `files/` director
 - `opendkim/` — host-specific (same gate). Manages `/etc/opendkim.conf` and the three text tables under `/etc/dkimkeys/` (`signing.table`, `key.table`, `trusted.hosts`). The `.private` keys stay out-of-band (live secrets). Wired into postfix as a milter via `local:opendkim/opendkim.sock` (a unix socket inside postfix's chroot).
 - `postsrsd/` — host-specific (same gate). Manages `/etc/default/postsrsd` for the Sender Rewriting Scheme daemon. Wired into postfix via `{sender,recipient}_canonical_maps = tcp:127.0.0.1:{10001,10002}` so mail FORWARDED through this host (alias_maps / virtual_alias_maps re-injection) gets its envelope-from rewritten to an SRS-encoded `@eacs.io` address — preserves SPF alignment at the next hop without forging the original sender. `SRS_EXCLUDE_DOMAINS` lists every domain whose envelope-from should be left alone: our local mail-receiving domains (eacs.io, approximately.competent.services, blackletterlabs.com, seventeengames.com) PLUS `ofb.net`, because this host is ofb's outbound :25 relay (GCE blocks outbound :25 from ofb), and ofb.net's SPF already authorizes 104.200.25.248 directly. Other ofb-hosted domains (tattoobag.com, etc.) are NOT excluded — when those appear in envelope-from here, it's via ofb-side forwarding of probably-spoofed mail, which is exactly what SRS should rewrite. The HMAC secret at `/etc/postsrsd.secret` is package-generated on first install (mode 0600, owner=postsrs) and stays out of the repo. `postsrsd/` is included in `deploy.py` BEFORE `postfix/` so postsrsd is configured + running before postfix reload activates the canonical_maps lookup.
 - `dns/` — host-specific (`Hostname == "egnor-2020"`). Knot DNS authoritative server. Primary for user-owned zones, with source-of-truth zone files at `/etc/knot/zones/` managed from this repo and Hurricane Electric (`ns{1..5}.he.net`) as the AXFR-pulling secondary, registered per-zone at `dns.he.net`. Replaces BIND9 — `dns/setup.py` stops and disables `named.service` so Knot can claim port 53. Also drops in `DNSStubListener=no` for systemd-resolved (and repoints `/etc/resolv.conf` at the non-stub `/run/systemd/resolve/resolv.conf` that resolved still maintains) so the stub on `127.0.0.53` doesn't conflict with Knot's `0.0.0.0:53` bind. Knot's mutable state (journals, slave-zone caches) stays at the package default `/var/lib/knot/`; primary-zone files in `knot.conf` use absolute paths into `/etc/knot/zones/`. Knot bumps SOA serials itself (`serial-policy: unixtime`, `zonefile-load: difference-no-serial`, `journal-content: all`) so primary zone files can keep `1` as the serial forever.
-- `netdata/` — Netdata config. Parent vs child role picked by hostname (`egnor-2020` is the parent; everywhere else is a child streaming up to it). Manages `netdata.conf` + `stream.conf` only; `claim.conf` (Cloud token) and the package install are out-of-band. No-ops if `/etc/netdata` doesn't exist.
-- `unifi/` — host-specific (`Hostname == "skully"`). Self-hosted **UniFi OS Server** — Ubiquiti's containerized (Podman) self-hosting platform, the successor to the standalone UniFi Network Application. It's an ~800MB versioned installer binary (not an apt repo) that self-updates in-app after a one-time interactive run, so pyinfra owns only the declarative parts: it purges the old apt-based Network app + MongoDB (an earlier iteration of this area), installs `podman` + `slirp4netns`, and downloads + checksum-verifies the pinned installer to `/opt/unifi-os-server/`. The interactive install itself is a documented one-time step. See "Self-hosted UniFi OS Server (skully)" below.
+- `netdata/` — Netdata config. Parent vs child role picked by hostname (`egnor-2020` is the parent; everywhere else is a child streaming up to it). Manages `netdata.conf` + `stream.conf`, plus the `go.d/` and `health.d/` overrides. Installs `smartmontools` so the go.d `smartctl` collector reports SMART disk health on physical hosts; alerts are evaluated on the parent (`files.parent/health.d/smartctl.conf`) since children run with `[health] enabled = no`. `claim.conf` (Cloud token) and the package install are out-of-band. No-ops if `/etc/netdata` doesn't exist.
 - `user/` — per-user dotfiles. `setup.py` symlinks every leaf under `user/files/` into the target's `$HOME`. A "leaf" is a regular file, a symlink, or a directory containing `.git` (the latter two are linked as a unit, not recursed into). Probes `~/source/dotfiles` and `~/dotfiles` for an existing checkout (and clones to `~/dotfiles` otherwise).
 - `tweaks/` — root-owned `/etc` / systemd drop-ins, gated on facts (`LinuxName`, etc.) so the file is safe to run on any host — inapplicable tweaks just skip. Each tweak: `files.put` followed by `systemd.daemon_reload` + `systemd.service` chained via `_if=op.did_change` so reloads only happen on real changes.
 
@@ -163,43 +162,6 @@ Once the zone file is live in Knot (previous section), flipping the actual deleg
 4. **Glue records (eacs.io only).** Because `ns1.eacs.io` is *in* the `eacs.io` zone it serves, the `.io` registrar (Squarespace) needs explicit "host" records: `ns1.eacs.io = 104.200.25.248` plus the two IPv6 addresses. Without glue, resolvers can't find ns1.eacs.io to ask it for eacs.io. No glue is needed for other zones — they just list ns1.eacs.io and let resolvers chase it through `.io`.
 
 TTLs at the apex are 1h, so propagation is fast. The old NS set keeps answering until its parent-TLD TTL expires (typically 1–2 days), so a brief overlap where both servers answer correctly is normal and safe.
-
-## Self-hosted UniFi OS Server (skully)
-
-`unifi/setup.py` (gated on `Hostname == "skully"`) sets up **UniFi OS Server** — Ubiquiti's containerized (Podman) self-hosting platform. It's the successor to the standalone "UniFi Network Application" apt package: it bundles UniFi Network plus the wider UniFi OS (unified console on `:11443`, official remote access via Site Manager, room for other apps), and self-updates from its own UI after install.
-
-> An earlier version of this area installed the standalone Network app from Ubiquiti's apt repo + a MongoDB repo. We switched to UniFi OS Server (the modern path); `setup.py` purges that old install (packages, repos, keys, the `mongod` mask) on its next run, which also satisfies Ubiquiti's "close the Network Server before installing" note.
-
-Why this can't be a normal apt area:
-
-- UniFi OS Server is **not** an apt repo. It's an ~800MB self-contained installer binary (bundles the container images) downloaded from `fw-download.ubnt.com`, run **once** interactively as root. After that it manages its own upgrades (Site Manager → Update Manager, or the local Control Plane). So apt never sees it.
-- The installer is interactive (checks disk/ports, creates a `uosserver` user, configures a `uosserver` systemd unit, runs everything under Podman) and on Linux may offer to migrate an existing Network Server.
-
-So pyinfra owns only the declarative, idempotent pieces; the install run is a one-time manual step.
-
-What `setup.py` does:
-
-1. Purges the old `unifi` + `mongodb-org-server` packages and removes the apt sources/keyrings + `mongod` mask symlink from the previous iteration.
-2. Installs `podman` + `slirp4netns` (Podman 4.3.1+ required; Docker unsupported). Ubuntu 26.04 ("resolute") ships new-enough versions.
-3. Downloads + md5-verifies the **pinned** installer (the `UOS_VERSION`/`UOS_URL`/`UOS_MD5` constants at the top of `setup.py`) to `/opt/unifi-os-server/`. Pinning a version makes the bootstrap reproducible; everyday upgrades happen in-app, not here. To seed a newer base version, grab the current download link + md5 from Ubiquiti's Releases page and bump all three constants together.
-
-Deploy, then the one-time install:
-
-```
-pyinfra @local deploy.py --dry                       # confirm the purge/podman/download ops
-pyinfra @local deploy.py                              # apply (downloads the ~800MB installer)
-sudo /opt/unifi-os-server/unifi-os-server-5.0.6-x64   # run the installer; answer its prompts
-sudo usermod -aG uosserver egnor                      # optional: manage without sudo (re-login to apply)
-```
-
-Verify and use:
-
-```
-systemctl status uosserver                # the installer creates + enables this unit
-ss -ltnp | grep 11443                     # local management UI
-```
-
-Then browse to `https://skully:11443/` (self-signed cert) to run the setup wizard and adopt devices. Captive portals (if used) serve on `:8444`. Service control is the usual `systemctl {start,stop,enable,disable} uosserver`.
 
 ## Adding a new area
 
