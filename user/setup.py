@@ -4,9 +4,9 @@
 import os
 from pathlib import Path
 from pyinfra import host
-from pyinfra.facts.files import Directory
+from pyinfra.facts.files import Directory, File
 from pyinfra.facts.server import Home, LsbRelease
-from pyinfra.operations import files, git
+from pyinfra.operations import files, git, server
 
 
 def setup_repo_on_host():
@@ -20,13 +20,13 @@ def setup_repo_on_host():
     )
 
     # Clones if missing, pulls if present (no-op when local tip == remote tip).
-    git.repo(
+    repo_op = git.repo(
         name="Clone or update dotfiles repo",
         src="https://github.com/egnor/dotfiles.git",
         dest=repo_on_host,
     )
 
-    return repo_on_host
+    return repo_on_host, repo_op
 
 
 def link_tree(tree, repo_on_host):
@@ -55,8 +55,8 @@ def link_tree(tree, repo_on_host):
 # Some files must be copied, not linked to work (eg. .forward)
 files.sync(src="user/copy-files", dest=host.get_fact(Home), delete=False)
 
-# For other files, make symlinks to any edits are made to the repo
-repo_on_host = setup_repo_on_host()
+# For other files, make symlinks so any edits are made to the repo
+repo_on_host, repo_op = setup_repo_on_host()
 link_tree("files", repo_on_host)
 
 # "Modern" hosts (Ubuntu 20.04+) additionally get tools whose prebuilt
@@ -64,3 +64,17 @@ link_tree("files", repo_on_host)
 lsb = host.get_fact(LsbRelease) or {}
 if lsb.get("id") == "Ubuntu" and int(lsb.get("release", "").split(".")[0]) >= 20:
     link_tree("files-modern", repo_on_host)
+
+# Now that the symlinks (incl. .config/mise/*) are in place, reconcile
+# mise-managed CLI tools whenever the repo updated. This keeps editor tooling —
+# notably nvim-treesitter's `tree-sitter` CLI — on PATH before nvim first runs;
+# otherwise LazyVim falls back to a Mason-built copy that then shadows mise.
+# mise is installed out-of-band (.zshrc only activates it if present), so this
+# no-ops on hosts that don't have it.
+mise_bin = f"{host.get_fact(Home)}/.local/bin/mise"
+if host.get_fact(File, path=mise_bin):
+    server.shell(
+        name="Install mise-managed CLI tools",
+        commands=[f"{mise_bin} install"],
+        _if=repo_op.did_change,
+    )
