@@ -77,22 +77,45 @@ server {
 
 # 0b10001.com — own site, served from www-0b10001 (formerly redirected to
 # seventeengames.com). Already on the 0b10001.com cert.
+#
+# The top-level outro page must be cross-origin isolated too, or the embedded
+# mac.0b10001.com emulator iframe silently drops to the slow (no
+# SharedArrayBuffer) path. See 0b10001_site/emulator/README.md.
 server {
     server_name 0b10001.com;
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001;
-    add_header Access-Control-Allow-Origin *;
+
+    add_header Cross-Origin-Opener-Policy   "same-origin"  always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
 }
 
-# mac.0b10001.com — served from www-0b10001-mac.
-# NOTE: mac.0b10001.com is NOT yet on the 0b10001.com cert — it serves a
-# name-mismatched cert until the cert is reissued with -d mac.0b10001.com
-# (see deploy notes).
+# mac.0b10001.com — the self-hosted infinite-mac emulator, served from
+# www-0b10001-mac (a static SPA). Needs cross-origin isolation (COOP+COEP) for
+# full-speed SharedArrayBuffer, a cross-origin CORP so 0b10001.com can embed it,
+# and an SPA fallback so client-routed paths like /embed resolve to index.html.
+# See 0b10001_site/emulator/README.md.
 server {
     server_name mac.0b10001.com;
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001-mac;
-    add_header Access-Control-Allow-Origin *;
+
+    add_header Cross-Origin-Opener-Policy   "same-origin"   always;
+    add_header Cross-Origin-Embedder-Policy "require-corp"  always;
+    add_header Cross-Origin-Resource-Policy "cross-origin"  always;
+    add_header Service-Worker-Allowed       "/"             always;
+
+    # Content-hashed assets and disk chunks are immutable. A nested location's
+    # own add_header resets the inherited ones, so repeat the isolation headers.
+    location ~ ^/(assets|Disk)/ {
+        add_header Cross-Origin-Opener-Policy   "same-origin"   always;
+        add_header Cross-Origin-Embedder-Policy "require-corp"  always;
+        add_header Cross-Origin-Resource-Policy "cross-origin"  always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    # SPA: /embed (and friends) are client-routed -> serve index.html.
+    location / { try_files $uri /index.html; }
 }
 
 server {
