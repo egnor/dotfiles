@@ -3,13 +3,6 @@
 # teamleftout.org
 server {
     server_name teamleftout.org www.teamleftout.org;
-    listen [::]:80;
-    listen 80;
-    return 301 https://teamleftout.org$request_uri;
-}
-
-server {
-    server_name teamleftout.org www.teamleftout.org;
     include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/www.teamleftout.org;
     index index.html;
@@ -24,15 +17,7 @@ server {
 
 # czar.teamleftout.org
 server {
-    listen [::]:80;
-    listen 80;
     server_name czar.teamleftout.org www.czar.teamleftout.org;
-    return 301 https://czar.teamleftout.org$request_uri;
-}
-
-server {
-    server_name czar.teamleftout.org www.czar.teamleftout.org;
-    include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/czar.teamleftout.org;
     index index.html;
 
@@ -44,37 +29,19 @@ server {
         proxy_pass http://127.0.0.1:433/;
     }
 
-    listen [::]:443 ssl;
-    listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/czar.teamleftout.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/czar.teamleftout.org/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    include /etc/nginx/snippets/tls-czar.conf;
 }
 
 # czarchat.teamleftout.org
 server {
-    listen [::]:80;
-    listen 80;
     server_name czarchat.teamleftout.org www.czarchat.teamleftout.org;
-    return 301 https://czarchat.teamleftout.org$request_uri;
-}
-
-server {
-    server_name czarchat.teamleftout.org www.czarchat.teamleftout.org;
-    include /etc/nginx/snippets/acme-challenge.conf;
     root /home/leftout/czarchat.teamleftout.org;
     index index.html;
 
     auth_basic "Same master login as puzzletron";
     auth_basic_user_file /home/leftout/htpasswd;
 
-    listen [::]:443 ssl;
-    listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/czar.teamleftout.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/czar.teamleftout.org/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    include /etc/nginx/snippets/tls-czar.conf;
 }
 
 # slack.teamleftout.org
@@ -111,11 +78,4 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/jolly.teamleftout.org/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  return 301 https://jolly.teamleftout.org$request_uri;
-  server_name jolly.teamleftout.org jollyroger.teamleftout.org jolly-roger.teamleftout.org jr.teamleftout.org roger.teamleftout.org;
 }

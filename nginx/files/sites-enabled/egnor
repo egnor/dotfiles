@@ -14,14 +14,6 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/amiobsoleteyet.com/privkey.pem;
 }
 
-server {
-  server_name amiobsoleteyet.com www.amiobsoleteyet.com amiobsoleteyet.org www.amiobsoleteyet.org amiobsoleteyet.net www.amiobsoleteyet.net;
-  include /etc/nginx/snippets/acme-challenge.conf;
-  listen [::]:80;
-  listen 80;
-  return 301 https://amiobsoleteyet.com$request_uri;  # enable after cert exists
-}
-
 # cara.vision
 server {
   server_name cara.vision www.cara.vision;
@@ -37,17 +29,9 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/cara.vision/privkey.pem;
 }
 
-server {
-  server_name cara.vision www.cara.vision;
-  listen [::]:80;
-  listen 80;
-  return 301 https://cara.vision$request_uri;
-}
-
 # competent.services
 server {
   server_name approximately.competent.services www.approximately.competent.services competent.services www.competent.services egnor.approximately.competent.services www.egnor.approximately.competent.services eacs.io www.eacs.io egnor.io www.egnor.io egnor.services www.egnor.services;
-  include /etc/nginx/snippets/acme-challenge.conf;
   if ($host != 'approximately.competent.services') {
     return 301 https://approximately.competent.services$request_uri;
   }
@@ -58,17 +42,7 @@ server {
   autoindex on;
   add_header Access-Control-Allow-Origin *;
 
-  listen [::]:443 ssl;
-  listen 443 ssl;
-  ssl_certificate /etc/letsencrypt/live/competent.services/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/competent.services/privkey.pem;
-}
-
-server {
-  server_name approximately.competent.services www.approximately.competent.services competent.services www.competent.services egnor.approximately.competent.services www.egnor.approximately.competent.services eacs.io www.eacs.io egnor.io www.egnor.io egnor.services www.egnor.services;
-  listen [::]:80;
-  listen 80;
-  return 301 https://approximately.competent.services$request_uri;
+  include /etc/nginx/snippets/tls-competent.conf;
 }
 
 # czartest
@@ -89,13 +63,6 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/czartest.teamleftout.org/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  return 301 https://$host$request_uri;
-  server_name czartest.teamleftout.org www.czartest.teamleftout.org;
 }
 
 # egnor.me
@@ -123,13 +90,6 @@ server {
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
-server {
-  listen [::]:80 ipv6only=on default;
-  listen 80 default;
-  server_name dan.egnor.name www.dan.egnor.name egnor.me www.egnor.me;
-  return 301 https://egnor.me$request_uri;
-}
-
 # escaperooms.fun — restructured: server-level `return 301` would short-circuit
 # the ACME location, so the redirect lives in `location /`.
 server {
@@ -145,13 +105,6 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/escaperooms.fun/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  return 301 https://$host$request_uri;
-  server_name escaperooms.fun www.escaperooms.fun;
 }
 
 # gaslightle.fun
@@ -175,13 +128,6 @@ server {
 
   ssl_certificate /etc/letsencrypt/live/gorey.games/fullchain.pem;
   ssl_certificate_key /etc/letsencrypt/live/gorey.games/privkey.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  return 301 https://$host$request_uri;
-  server_name gorey.games www.gorey.games;
 }
 
 # nutrimatic
@@ -245,13 +191,6 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/nutrimatic.org/privkey.pem;
 }
 
-server {
-  listen [::]:80;
-  listen 80;
-  server_name nutrimatic.org www.nutrimatic.org;
-  return 301 https://nutrimatic.org$request_uri;
-}
-
 # puzzlehuntcalendar and friends
 server {
   server_name isthereapuzzlehuntthisweekend.com;
@@ -278,18 +217,6 @@ server {
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
-server {
-  server_name .isthereapuzzlehuntthisweekend.com;
-  server_name .isthereapuzzlehunttoday.com;
-  server_name .isthereapuzzlehunttomorrow.com;
-  server_name .puzzlehuntcalendar.com;
-  server_name .puzzlehuntcalendar.org;
-  server_name .puzzlehunts.org;
-  listen [::]:80;
-  listen 80;
-  return 301 https://puzzlehuntcalendar.com$request_uri;
-}
-
 # plague.wtf
 server {
   server_name plague.wtf www.plague.wtf;
@@ -313,11 +240,14 @@ server {
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
 
+# covid.ofb.net has no :443 server of its own; keep an explicit :80 redirect to
+# plague.wtf (the global catch-all would send it to https://covid.ofb.net, which
+# has no vhost or cert).
 server {
   listen [::]:80;
   listen 80;
+  server_name covid.ofb.net www.covid.ofb.net;
   return 301 https://plague.wtf$request_uri;
-  server_name plague.wtf www.plague.wtf covid.ofb.net www.covid.ofb.net;
 }
 
 # prexcytgo
@@ -340,11 +270,4 @@ server {
   ssl_certificate_key /etc/letsencrypt/live/prexcytgo.com-0002/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-}
-
-server {
-  listen [::]:80;
-  listen 80;
-  return 301 https://$host$request_uri;
-  server_name prexcytgo.com www.prexcytgo.com;
 }

@@ -1,0 +1,19 @@
+# Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/http-redirect
+# Global :80 default: bounce every HTTP request to HTTPS and let each :443
+# vhost do its own canonicalization (www->apex, etc.). This is the single
+# `default_server` for port 80 — explicitly-named :80 servers elsewhere
+# (slack -> Slack, gaslightle serving, covid -> plague) win over it via normal
+# server_name matching, so they don't need to coordinate with this block.
+#
+# The acme-challenge snippet is included here too: its `location ^~` beats the
+# `location /` redirect, so certbot HTTP-01 webroot validation works on :80 for
+# any hostname, including ones that have no other :80 server of their own.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    include /etc/nginx/snippets/acme-challenge.conf;
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}

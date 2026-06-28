@@ -5,11 +5,7 @@
 # Cert is the shared `competent.services` SAN cert (covers eacs.io et al).
 server {
   server_name netdata.eacs.io;
-  include /etc/nginx/snippets/acme-challenge.conf;
-  listen [::]:443 ssl;
-  listen 443 ssl;
-  ssl_certificate /etc/letsencrypt/live/competent.services/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/competent.services/privkey.pem;
+  include /etc/nginx/snippets/tls-competent.conf;
 
   auth_basic "Netdata";
   auth_basic_user_file /etc/nginx/htpasswd-netdata;
@@ -25,11 +21,4 @@ server {
     proxy_buffering off;
     proxy_pass_request_headers on;
   }
-}
-
-server {
-  server_name netdata.eacs.io;
-  listen [::]:80;
-  listen 80;
-  return 301 https://netdata.eacs.io$request_uri;
 }

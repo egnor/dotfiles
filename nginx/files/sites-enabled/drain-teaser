@@ -1,11 +1,13 @@
 # Managed by pyinfra. Source: dotfiles/nginx/files/sites-enabled/drain-teaser
-# Domains for "Drain Teaser" game
+# Domains for "Drain Teaser" game.
+#
+# All :80 -> :443 redirects are handled by the global default in
+# sites-enabled/http-redirect; only :443 servers live here. TLS + ACME
+# boilerplate is factored into the per-cert snippets included below.
 
 server {
     server_name blackletterlabs.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-blackletterlabs.conf;
     rewrite ^/admin(/(.*))? https://api.blackletterlabs.com/_/$2;
     location = / {
         try_files /index.html =404;
@@ -17,16 +19,11 @@ server {
     add_header Access-Control-Allow-Origin *;
     root /home/egnor/www-blackletterlabs;
     error_page 404 =200 /catch.html;
-
-    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
 }
 
 server {
     server_name iap.blackletterlabs.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-blackletterlabs.conf;
     rewrite ^/pb(/(.*))? https://api.blackletterlabs.com/_/$2;
     location = / {
         try_files /index.html =404;
@@ -34,38 +31,13 @@ server {
 
     add_header Access-Control-Allow-Origin *;
     root /home/egnor/prod-blackletterlabs-iap/www_root;
-
-    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
 }
 
-server {
-    server_name iap.blackletterlabs.com;
-    listen [::]:80;
-    listen 80;
-    return 301 https://iap.blackletterlabs.com$request_uri;
-}
-
-# admin.blackletterlabs.com — restructured: server-level `return 301` would
-# short-circuit the ACME location, so the redirect lives in `location /`.
+# admin.blackletterlabs.com — the redirect lives in `location /` (not a
+# server-level `return`) so it doesn't short-circuit the ACME location.
 server {
     server_name admin.blackletterlabs.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
-    location / {
-        return 301 https://iap.blackletterlabs.com/admin.html;
-    }
-
-    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
-}
-
-server {
-    server_name admin.blackletterlabs.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:80;
-    listen 80;
+    include /etc/nginx/snippets/tls-blackletterlabs.conf;
     location / {
         return 301 https://iap.blackletterlabs.com/admin.html;
     }
@@ -73,45 +45,26 @@ server {
 
 server {
     server_name api.blackletterlabs.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-blackletterlabs.conf;
     location / {
         proxy_set_header X-Real-IP $remote_addr;
         # Pin to IPv4 — PocketBase listens on 127.0.0.1:8090, but `localhost`
         # was resolving to [::1] and producing 502s for real clients.
         proxy_pass http://127.0.0.1:8090;
     }
-
-    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
 }
 
 server {
     server_name www.blackletterlabs.com blackletterlab.com www.blackletterlab.com blacklettergame.com www.blacklettergame.com blackletterfortress.com www.blackletterfortress.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-blackletterlabs.conf;
     location / {
         return 301 https://blackletterlabs.com$request_uri;
     }
-
-    ssl_certificate /etc/letsencrypt/live/blackletterlabs.com-0001/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/blackletterlabs.com-0001/privkey.pem;
-}
-
-server {
-    server_name blackletterlabs.com *.blackletterlabs.com blackletterlab.com *.blackletterlab.com blacklettergame.com *.blacklettergame.com blackletterfortress.com *.blackletterfortress.com;
-    listen [::]:80;
-    listen 80;
-    return 301 https://blackletterlabs.com$request_uri;
 }
 
 server {
     server_name seventeengames.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-0b10001.conf;
 
     location = / {
         return 301 https://shop.seventeengames.com/;
@@ -120,36 +73,47 @@ server {
     root /home/egnor/www-seventeengames;
     add_header Access-Control-Allow-Origin *;
     error_page 404 =200 /catch.html;
+}
 
-    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
+# 0b10001.com — own site, served from www-0b10001 (formerly redirected to
+# seventeengames.com). Already on the 0b10001.com cert.
+server {
+    server_name 0b10001.com;
+    include /etc/nginx/snippets/tls-0b10001.conf;
+    root /home/egnor/www-0b10001;
+    add_header Access-Control-Allow-Origin *;
+}
+
+# mac.0b10001.com — served from www-0b10001-mac.
+# NOTE: mac.0b10001.com is NOT yet on the 0b10001.com cert — it serves a
+# name-mismatched cert until the cert is reissued with -d mac.0b10001.com
+# (see deploy notes).
+server {
+    server_name mac.0b10001.com;
+    include /etc/nginx/snippets/tls-0b10001.conf;
+    root /home/egnor/www-0b10001-mac;
+    add_header Access-Control-Allow-Origin *;
 }
 
 server {
-    server_name www.seventeengames.com 0b10001.com www.0b10001.com;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    server_name www.seventeengames.com;
+    include /etc/nginx/snippets/tls-0b10001.conf;
     location / {
         return 301 https://seventeengames.com$request_uri;
     }
-
-    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
 }
 
 server {
-    server_name seventeengames.com *.seventeengames.com 0b10001.com *.0b10001.com;
-    listen [::]:80;
-    listen 80;
-    return 301 https://seventeengames.com$request_uri;
+    server_name www.0b10001.com;
+    include /etc/nginx/snippets/tls-0b10001.conf;
+    location / {
+        return 301 https://0b10001.com$request_uri;
+    }
 }
 
 server {
     server_name 17g.io www.17g.io;
-    include /etc/nginx/snippets/acme-challenge.conf;
-    listen [::]:443 ssl;
-    listen 443 ssl;
+    include /etc/nginx/snippets/tls-0b10001.conf;
 
     location = / {
         return 301 https://shop.seventeengames.com/;
@@ -157,14 +121,4 @@ server {
     location ~ /(.+) {
         return 301 https://seventeengames.com/scan.html?id=$1;
     }
-
-    ssl_certificate /etc/letsencrypt/live/0b10001.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/0b10001.com/privkey.pem;
-}
-
-server {
-    server_name 17g.io *.17g.io;
-    listen [::]:80;
-    listen 80;
-    return 301 https://17g.io$request_uri;
 }
