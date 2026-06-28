@@ -75,31 +75,36 @@ server {
     error_page 404 =200 /catch.html;
 }
 
-# 0b10001.com — own site, served from www-0b10001 (formerly redirected to
-# seventeengames.com). Already on the 0b10001.com cert.
-#
-# The top-level outro page must be cross-origin isolated too, or the embedded
-# mac.0b10001.com emulator iframe silently drops to the slow (no
-# SharedArrayBuffer) path. See 0b10001_site/emulator/README.md.
+# 0b10001.com - outro site for the final Drain Teaser capstone puzzle.
 server {
     server_name 0b10001.com;
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001;
 
+    location = /deception {
+        add_header Set-Cookie "deception=17; Path=/";
+        return 302 /;
+    }
+
+    if ($cookie_deception != 17) {
+        return 302 https://shop.seventeengames.com/;
+    }
+
+    # The top-level outro page must be cross-origin isolated, or the embedded
+    # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
     add_header Cross-Origin-Opener-Policy   "same-origin"  always;
     add_header Cross-Origin-Embedder-Policy "require-corp" always;
 }
 
-# mac.0b10001.com — the self-hosted infinite-mac emulator, served from
-# www-0b10001-mac (a static SPA). Needs cross-origin isolation (COOP+COEP) for
-# full-speed SharedArrayBuffer, a cross-origin CORP so 0b10001.com can embed it,
-# and an SPA fallback so client-routed paths like /embed resolve to index.html.
-# See 0b10001_site/emulator/README.md.
+# mac.0b10001.com — the self-hosted infinite-mac emulator.
 server {
     server_name mac.0b10001.com;
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001-mac;
 
+    # Needs cross-origin isolation (COOP+COEP) for full-speed SharedArrayBuffer,
+    # a cross-origin CORP so 0b10001.com can embed it, and an SPA fallback so
+    # client-routed paths like /embed resolve to index.html.
     add_header Cross-Origin-Opener-Policy   "same-origin"   always;
     add_header Cross-Origin-Embedder-Policy "require-corp"  always;
     add_header Cross-Origin-Resource-Policy "cross-origin"  always;
