@@ -18,5 +18,5 @@ postinstall = '''
 '''
 
 [tasks]
-deploy = "pyinfra -y @local deploy.py"
+local = "pyinfra -y @local deploy.py"
 dry = "pyinfra --dry @local deploy.py"
