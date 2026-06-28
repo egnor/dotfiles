@@ -75,12 +75,15 @@ server {
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001;
 
-    # The content must be cross-origin isolated, or the embedded
-    # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
+    location = / {
+        return 301 https://shop.seventeengames.com/;
+    }
+
+    # Needs cross-origin isolation (COOP+COEP) for full-speed SharedArrayBuffer.
     add_header Cross-Origin-Opener-Policy   "same-origin"  always;
     add_header Cross-Origin-Embedder-Policy "require-corp" always;
 
-    # serve /deception.html for /deception (no suffix needed)
+    # serve /foobar.html for /foobar (no suffix needed) for puzzle redirect.
     try_files $uri $uri/ $uri.html =404;
 }
 
