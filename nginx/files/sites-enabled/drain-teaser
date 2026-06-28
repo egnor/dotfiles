@@ -9,9 +9,6 @@ server {
     server_name blackletterlabs.com;
     include /etc/nginx/snippets/tls-blackletterlabs.conf;
     rewrite ^/admin(/(.*))? https://api.blackletterlabs.com/_/$2;
-    location = / {
-        try_files /index.html =404;
-    }
     location = /iap.html {
         return 301 https://iap.blackletterlabs.com/$is_args$args;
     }
@@ -25,9 +22,6 @@ server {
     server_name iap.blackletterlabs.com;
     include /etc/nginx/snippets/tls-blackletterlabs.conf;
     rewrite ^/pb(/(.*))? https://api.blackletterlabs.com/_/$2;
-    location = / {
-        try_files /index.html =404;
-    }
 
     add_header Access-Control-Allow-Origin *;
     root /home/egnor/prod-blackletterlabs-iap/www_root;
@@ -81,26 +75,13 @@ server {
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001;
 
-    # Arriving here from /deception (a puzzle answer) sets the unlock cookie
-    # and bounces to /. This must NOT be gated by the cookie check below.
-    location = /deception {
-        add_header Set-Cookie "deception=17; Path=/";
-        return 302 /;
-    }
+    # The content must be cross-origin isolated, or the embedded
+    # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
+    add_header Cross-Origin-Opener-Policy   "same-origin"  always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
 
-    # ALL other content requires the unlock cookie, or the user is redirected.
-    # The "location /" has lower priority than "location = /deception" above.
-    location / {
-        if ($cookie_deception != 17) {
-            return 302 https://shop.seventeengames.com/;
-        }
-
-        # The content must be cross-origin isolated, or the embedded
-        # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
-        add_header Cross-Origin-Opener-Policy   "same-origin"  always;
-        add_header Cross-Origin-Embedder-Policy "require-corp" always;
-        try_files $uri $uri/ =404;
-    }
+    # serve /deception.html for /deception (no suffix needed)
+    try_files $uri $uri/ $uri.html =404;
 }
 
 # mac.0b10001.com — the self-hosted infinite-mac emulator.
