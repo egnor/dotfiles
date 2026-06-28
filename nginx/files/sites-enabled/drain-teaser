@@ -81,19 +81,26 @@ server {
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001;
 
+    # Arriving here from /deception (a puzzle answer) sets the unlock cookie
+    # and bounces to /. This must NOT be gated by the cookie check below.
     location = /deception {
         add_header Set-Cookie "deception=17; Path=/";
         return 302 /;
     }
 
-    if ($cookie_deception != 17) {
-        return 302 https://shop.seventeengames.com/;
-    }
+    # ALL other content requires the unlock cookie, or the user is redirected.
+    # The "location /" has lower priority than "location = /deception" above.
+    location / {
+        if ($cookie_deception != 17) {
+            return 302 https://shop.seventeengames.com/;
+        }
 
-    # The top-level outro page must be cross-origin isolated, or the embedded
-    # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
-    add_header Cross-Origin-Opener-Policy   "same-origin"  always;
-    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        # The content must be cross-origin isolated, or the embedded
+        # mac.0b10001.com iframe drops to the slow (no SharedArrayBuffer) path.
+        add_header Cross-Origin-Opener-Policy   "same-origin"  always;
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        try_files $uri $uri/ =404;
+    }
 }
 
 # mac.0b10001.com — the self-hosted infinite-mac emulator.
