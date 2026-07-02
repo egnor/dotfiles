@@ -22,6 +22,9 @@ info@seventeengames.com    admin@seventeengames.com
 shop@seventeengames.com    admin@seventeengames.com
 support@seventeengames.com    admin@seventeengames.com
 
+postmaster@0b10001.com    postmaster
+admin@0b10001.com    egnor@ofb.net
+
 # approximately.competent.services and eacs.io are local destinations
 # (mydestination in main.cf); the aliases_regexp catch-all routes anything
 # sent to them to egnor@ofb.net.

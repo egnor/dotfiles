@@ -1,3 +1,4 @@
 blackletterlabs.com blackletterlabs.com:mail:/etc/dkimkeys/blackletterlabs.com.private
 seventeengames.com seventeengames.com:mail:/etc/dkimkeys/seventeengames.com.private
 eacs.io eacs.io:mail:/etc/dkimkeys/eacs.io.private
+0b10001.com 0b10001.com:mail:/etc/dkimkeys/0b10001.com.private

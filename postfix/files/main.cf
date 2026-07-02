@@ -27,7 +27,7 @@ smtp_bind_address6 = 2600:3c01:e000:3d3::1
 # Local alias expansion is regexp-only — see postfix/files/aliases for why
 # /etc/aliases is intentionally inert here.
 alias_maps = regexp:/etc/postfix/aliases_regexp
-virtual_alias_domains = blackletterlabs.com seventeengames.com
+virtual_alias_domains = blackletterlabs.com seventeengames.com 0b10001.com
 virtual_alias_maps = hash:/etc/postfix/virtual
 mailbox_size_limit = 0
 recipient_delimiter = +
