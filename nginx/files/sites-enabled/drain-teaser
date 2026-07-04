@@ -93,22 +93,15 @@ server {
     include /etc/nginx/snippets/tls-0b10001.conf;
     root /home/egnor/www-0b10001-mac;
 
-    # Needs cross-origin isolation (COOP+COEP) for full-speed SharedArrayBuffer,
-    # a cross-origin CORP so 0b10001.com can embed it, and an SPA fallback so
-    # client-routed paths like /embed resolve to index.html.
+    # Needs cross-origin isolation (COOP+COEP) for full-speed SharedArrayBuffer
+    # and cross-origin CORP so 0b10001.com can embed it.
     add_header Cross-Origin-Opener-Policy   "same-origin"   always;
     add_header Cross-Origin-Embedder-Policy "require-corp"  always;
     add_header Cross-Origin-Resource-Policy "cross-origin"  always;
     add_header Service-Worker-Allowed       "/"             always;
 
-    # Content-hashed assets and disk chunks are immutable. A nested location's
-    # own add_header resets the inherited ones, so repeat the isolation headers.
-    location ~ ^/(assets|Disk)/ {
-        add_header Cross-Origin-Opener-Policy   "same-origin"   always;
-        add_header Cross-Origin-Embedder-Policy "require-corp"  always;
-        add_header Cross-Origin-Resource-Policy "cross-origin"  always;
-        add_header Cache-Control "public, max-age=31536000, immutable" always;
-    }
+    # Silence console errors from telemetry POSTs to /varz which we ignore.
+    location = /varz { return 204; }
 
     # SPA: /embed (and friends) are client-routed -> serve index.html.
     location / { try_files $uri /index.html; }
