@@ -6,11 +6,53 @@
 
 from pyinfra import host
 from pyinfra.facts.files import Directory
-from pyinfra.facts.server import Hostname, LinuxName
-from pyinfra.operations import apt, files, systemd
+from pyinfra.facts.server import Hostname, LinuxName, Os
+from pyinfra.operations import apt, files, server, systemd
 from pyinfra.operations.util import any_changed
 
-if host.get_fact(Directory, "/etc/netdata"):
+# FreeBSD / OPNsense (e.g. onerouting, a Protectli router). Config lives at
+# /usr/local/etc/netdata, and the os-netdata plugin OWNS netdata.conf: it
+# re-renders that file from a Jinja template on every GUI apply, so anything
+# we push there is clobbered. stream.conf is outside the plugin's template
+# scope, so it's the one durable knob — we use it to make the box a child
+# streaming up to the parent (egnor-2020 / eacs.io), reusing the same api key
+# + destination as the Linux children (netdata/files.child/stream.conf).
+#
+# Consequences of not owning netdata.conf: the two Linux-child netdata.conf
+# tweaks aren't applied. `[health] enabled = no` isn't set, so the node also
+# evaluates health locally — a harmless duplicate of the parent's evaluation
+# (no notification recipients are configured on the box). `is ephemeral node`
+# isn't set either, which is appropriate for an always-on router (a disconnect
+# should alert).
+#
+# Access model matches the other hosts: connect as an unprivileged `egnor`
+# user and escalate with sudo (service package is installed). This REQUIRES
+# that user to have a real /bin/sh login shell — root's shell is the OPNsense
+# console-menu wrapper (/usr/local/sbin/opnsense-shell), which routes `-c`
+# through csh and mangles pyinfra's `sh -c` command wrapper. Create the user
+# in OPNsense's User Manager (so it persists in config.xml) with shell /bin/sh
+# + the ssh key, and grant passwordless sudo. Then:
+#   pyinfra onerouting.internal netdata/setup.py
+if host.get_fact(Os) == "FreeBSD":
+    if host.get_fact(Directory, "/usr/local/etc/netdata"):
+        stream = files.put(
+            name="stream.conf (freebsd child)",
+            src="netdata/files.child/stream.conf",
+            dest="/usr/local/etc/netdata/stream.conf",
+            user="netdata",
+            group="netdata",
+            mode="640",
+            _sudo=True,
+        )
+
+        server.shell(
+            name="Restart netdata if stream.conf changed",
+            commands=["service netdata restart"],
+            _sudo=True,
+            _if=stream.did_change,
+        )
+
+elif host.get_fact(Directory, "/etc/netdata"):
     role = "parent" if host.get_fact(Hostname) == "egnor-2020" else "child"
 
     # smartmontools provides `smartctl`, which the go.d smartctl collector
