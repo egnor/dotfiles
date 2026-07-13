@@ -54,8 +54,8 @@ def link_tree(tree, repo_on_host):
 
 # egnor's dotfiles are Linux-oriented today; some leaves assume Linux paths or
 # tools (fontconfig, kitty, the LazyVim/mise toolchain). Gate the whole area on
-# Linux so it cleanly skips FreeBSD/OPNsense (e.g. onerouting) and any other
-# non-Linux target. Generalise (macOS, fuller BSD) if/when we get there.
+# Linux so it cleanly skips macOS, router shells, or any other non-Linux target.
+# Generalise if/when we get there.
 if host.get_fact(Os) == "Linux":
     # Some files must be copied, not linked to work (eg. .forward)
     files.sync(src="user/copy-files", dest=host.get_fact(Home), delete=False)
@@ -68,15 +68,12 @@ if host.get_fact(Os) == "Linux":
     # binaries need a recent glibc — see
     # user/files-linux-modern/.config/mise/conf.d/.
     lsb = host.get_fact(LsbRelease) or {}
-    if lsb.get("id") == "Ubuntu" and int(lsb.get("release", "").split(".")[0]) >= 20:
-        link_tree("files-linux-modern", repo_on_host)
+    if lsb.get("id") == "Ubuntu":
+        if int(lsb.get("release", "").split(".")[0]) >= 20:
+            link_tree("files-linux-modern", repo_on_host)
 
     # Now that the symlinks (incl. .config/mise/*) are in place, reconcile
-    # mise-managed CLI tools whenever the repo updated. This keeps editor
-    # tooling — notably nvim-treesitter's `tree-sitter` CLI — on PATH before
-    # nvim first runs; otherwise LazyVim falls back to a Mason-built copy that
-    # then shadows mise. mise is installed out-of-band (.zshrc only activates it
-    # if present), so this no-ops on hosts that don't have it.
+    # mise-managed CLI tools whenever the repo updated.
     mise_bin = f"{host.get_fact(Home)}/.local/bin/mise"
     if host.get_fact(File, path=mise_bin):
         server.shell(
