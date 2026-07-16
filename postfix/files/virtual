@@ -24,6 +24,7 @@ support@seventeengames.com    admin@seventeengames.com
 
 postmaster@0b10001.com    postmaster
 admin@0b10001.com    egnor@ofb.net
+07734@0b10001.com    drain.teaser@gmail.com,egnor@ofb.net,elkin.tat@gmail.com
 
 # approximately.competent.services and eacs.io are local destinations
 # (mydestination in main.cf); the aliases_regexp catch-all routes anything
