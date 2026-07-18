@@ -19,6 +19,18 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
         _sudo=True,
     )
 
+    # Ensure unattended-upgrades is actually enabled, not just installed --
+    # see the source file for the eacs.io cautionary tale. Freshness of the
+    # resulting /var/lib/apt/periodic/upgrade-stamp is monitored by netdata
+    # (netdata/files.*/go.d/filecheck.conf + health.d/apt_upgrade.conf).
+    files.put(
+        name="apt: enable unattended upgrades",
+        src="tweaks/files/apt-auto-upgrades",
+        dest="/etc/apt/apt.conf.d/20auto-upgrades",
+        mode="644",
+        _sudo=True,
+    )
+
     # packagekitd's apt backend has a long-standing leak ; cap RSS so the
     # cgroup OOM killer reaps it before it drags the box into swap.
     if "packagekit.service" in host.get_fact(SystemdEnabled):
@@ -97,10 +109,12 @@ if host.get_fact(LinuxName) == "Ubuntu":
     #       * Pin-Priority -1 on Ubuntu-origin firefox, so the snap-transitional
     #         deb is simply uninstallable and can never be selected.
     #   - a snippet adding the mozilla origin to Unattended-Upgrade::
-    #     Allowed-Origins, matched by site= (NOT the bare host:suite shorthand,
-    #     which u-u resolves against the repo's bogus Release Origin field and
-    #     so never matches -- that mismatch made u-u "never"-pin mozilla and
-    #     fall back to reinstalling the snap on every run; see that file).
+    #     Origins-Pattern (NOT legacy Allowed-Origins, whose strict id:codename
+    #     parser crashes on key=value entries and aborts every u-u run),
+    #     matched by site= (NOT o=, which u-u resolves against the repo's bogus
+    #     Release Origin field and so never matches -- that mismatch made u-u
+    #     "never"-pin mozilla and fall back to reinstalling the snap on every
+    #     run; see that file for the full story).
     # Switching an existing snap-firefox install over is a one-time manual
     # step (`snap remove firefox && apt install firefox`); not done here.
     files.put(
@@ -128,7 +142,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     )
 
     files.put(
-        name="mozilla: unattended-upgrades allowed-origins",
+        name="mozilla: unattended-upgrades origins-pattern",
         src="tweaks/files/mozilla-unattended-upgrades.conf",
         dest="/etc/apt/apt.conf.d/51unattended-upgrades-mozilla",
         mode="644",
@@ -140,6 +154,15 @@ if host.get_fact(LinuxName) == "Ubuntu":
     files.file(
         name="mozilla: drop legacy firefox block",
         path="/etc/apt/apt.conf.d/52unattended-block-firefox",
+        present=False,
+        _sudo=True,
+    )
+
+    # Likewise drop the mozillateam-PPA allowlist entry from the pre-
+    # packages.mozilla.org approach; that PPA is no longer a configured source.
+    files.file(
+        name="mozilla: drop legacy mozillateam allowlist",
+        path="/etc/apt/apt.conf.d/51unattended-upgrades-firefox",
         present=False,
         _sudo=True,
     )

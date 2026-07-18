@@ -1,0 +1,9 @@
+// Managed by pyinfra. Source: tweaks/files/apt-auto-upgrades
+// Make sure unattended-upgrades actually RUNS. Installing the package is
+// not enough: apt.systemd.daily only invokes unattended-upgrade when
+// APT::Periodic::Unattended-Upgrade is nonzero, and this file normally
+// only gets written by an interactive `dpkg-reconfigure unattended-upgrades`
+// or an installer prompt -- eacs.io sat with the package installed but this
+// knob unset (i.e. no automatic security updates, ever) until Jul 2026.
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
