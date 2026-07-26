@@ -32,6 +32,9 @@ virtual_alias_maps = hash:/etc/postfix/virtual
 mailbox_size_limit = 0
 recipient_delimiter = +
 
+# Postfix defaults to 10MB. Raise to 50MB. (For reference gmail accepts 25MB.)
+message_size_limit = 52428800
+
 # === Queue retention ===
 # 5-day retention on real outbound mail has rescued us when a downstream
 # misconfiguration took >24h to spot, so we keep it. But null-sender DSNs
