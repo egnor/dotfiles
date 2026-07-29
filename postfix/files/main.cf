@@ -32,8 +32,14 @@ virtual_alias_maps = hash:/etc/postfix/virtual
 mailbox_size_limit = 0
 recipient_delimiter = +
 
-# Postfix defaults to 10MB. Raise to 50MB. (For reference gmail accepts 25MB.)
-message_size_limit = 52428800
+# Postfix defaults to 10MB, which silently broke large forwarded mail: ofb accepts
+# up to 60000000 and relays through here, so anything bigger than our limit bounced
+# back to the ORIGINAL sender (who then has no way to reach the ofb user).
+# Keep this comfortably ABOVE ofb's limit, not equal to it — ofb adds its own
+# Received: headers when forwarding, so a message that just fits there arrives
+# here a few hundred bytes larger. Gmail advertises SIZE 157286400, so the
+# receiving end is not the constraint.
+message_size_limit = 64000000
 
 # === Queue retention ===
 # 5-day retention on real outbound mail has rescued us when a downstream
