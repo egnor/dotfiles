@@ -37,8 +37,17 @@ recipient_delimiter = +
 # back to the ORIGINAL sender (who then has no way to reach the ofb user).
 # Keep this comfortably ABOVE ofb's limit, not equal to it — ofb adds its own
 # Received: headers when forwarding, so a message that just fits there arrives
-# here a few hundred bytes larger. Gmail advertises SIZE 157286400, so the
-# receiving end is not the constraint.
+# here a few hundred bytes larger.
+#
+# Do NOT raise this to match Gmail's advertised SIZE of 157286400. That figure
+# is not enforced: probing gmail-smtp-in and aspmx.l.google.com with MAIL FROM
+# SIZE= shows both accept exactly 52428800 (50MiB) and refuse 52428801 with
+# "552 5.3.4 Your message exceeded Google's message size limits". Since most
+# ofb mail is forwarded to Gmail, anything we accept above ~50MiB gets refused
+# downstream and turns into a bounce — the accept-then-bounce pattern that
+# feeds our backscatter problem. The binding limit belongs at ofb (the origin),
+# where a too-big message can still be refused at RCPT and reported to the
+# sender by their own MTA.
 message_size_limit = 64000000
 
 # === Queue retention ===
