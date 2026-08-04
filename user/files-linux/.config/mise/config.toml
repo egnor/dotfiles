@@ -1,11 +1,11 @@
 [tools]
-fd = "latest"
+fd = "latest"      # used by lazyvim / neovim
 gh = "latest"
-lazygit = "latest"
-# doesn't build on pi?
-# luajit = "latest"
+lazygit = "latest" # used by lazyvim / neovim??
+# luajit = "latest"  - doesn't build on pi?
 python = "3.12"
 ripgrep = "latest"
+uv = "0.12"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]
