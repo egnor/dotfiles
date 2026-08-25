@@ -1,0 +1,21 @@
+# Managed by pyinfra. Source: dotfiles/deadman/files/netdata-deadman.timer
+# Every 5 minutes, matching the check's period at healthchecks.io (period
+# 5m, grace 10m -- so a missed ping alerts ~15 min after the last good
+# one, which rides out a normal reboot but not a failed one).
+#
+# OnCalendar rather than OnUnitActiveSec: the latter measures from when
+# the previous run *finished*, so each run's duration (up to ~20s, more
+# when curl retries) accumulates as drift and the ping time wanders.
+# Persistent=true makes a boot that missed a firing ping immediately
+# rather than waiting for the next boundary -- so a clean reboot burns
+# only a few minutes of the grace period.
+[Unit]
+Description=Ping the netdata dead-man's switch every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
