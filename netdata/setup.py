@@ -28,7 +28,8 @@ if host.get_fact(Directory, "/etc/netdata"):
             _sudo=True,
         )
 
-    config_updates = [
+    # Everything a netdata restart is required to pick up.
+    restart_triggers = [
         files.put(
             name=f"netdata.conf ({role})",
             src=f"netdata/files.{role}/netdata.conf",
@@ -61,11 +62,13 @@ if host.get_fact(Directory, "/etc/netdata"):
         ),
     ]
 
-    # health_alarm_notify.conf is re-sourced by alarm-notify.sh on every
-    # event (alarm-notify.sh.in:519), so changes take effect without a
-    # netdata restart — kept out of the restart trigger below. Parent only:
-    # the parent host is where alarms are evaluated.
+    if smart_pkg is not None:
+        restart_triggers.append(smart_pkg)
+
+    # Parent only: the parent host is where alarms are evaluated.
     if role == "parent":
+        # Not a restart trigger — alarm-notify.sh re-sources this on every
+        # event (its line 519), so edits apply immediately.
         files.put(
             name="health_alarm_notify.conf (parent)",
             src="netdata/files.parent/health_alarm_notify.conf",
@@ -73,6 +76,26 @@ if host.get_fact(Directory, "/etc/netdata"):
             mode="644",
             _sudo=True,
         )
+
+        # systemd Environment= for alarm-notify.sh (clear_alarm_always). Unlike
+        # health_alarm_notify.conf this is NOT re-sourced per event -- it is the
+        # service's environment, so it needs daemon-reload + restart to apply.
+        # See the file itself for why this can't live in the notify config.
+        notify_env = files.put(
+            name="netdata.service alarm-notify environment (parent)",
+            src="netdata/files.parent/netdata-alarm-notify-env.conf",
+            dest="/etc/systemd/system/netdata.service.d/alarm-notify-env.conf",
+            mode="644",
+            create_remote_dir=True,
+            _sudo=True,
+        )
+
+        systemd.daemon_reload(
+            _sudo=True,
+            _if=notify_env.did_change,
+        )
+
+        restart_triggers.append(notify_env)
 
     # create this directory to quiet some journal-spam
     files.directory(
@@ -82,13 +105,10 @@ if host.get_fact(Directory, "/etc/netdata"):
         _sudo=True,
     )
 
-    # netdata.conf / stream.conf changes need a real restart; health.d/
-    # changes alone could use `netdatacli reload-health`, but bundling
-    # them into the restart trigger is simpler and still cheap.
-    restart_triggers = list(config_updates)
-    if smart_pkg is not None:
-        restart_triggers.append(smart_pkg)
-
+    # health.d/ alone could use `netdatacli reload-health` instead of a full
+    # restart, but that resets every alert's status to UNINITIALIZED just as a
+    # restart does (verified), so it avoids none of the notification churn and
+    # is not worth the extra branch.
     systemd.service(
         name="Restart netdata if config changed",
         service="netdata.service",
