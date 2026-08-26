@@ -175,6 +175,22 @@ All external endpoint checks run from the parent (egnor-2020) and are configured
 
 Stock alert templates in `/usr/lib/netdata/conf.d/health.d/httpcheck.conf` cover bad status, bad header, no connection, and timeouts, so a new job needs no health config. `health.d/httpcheck.conf` exists only to split one chronically flappy endpoint (`shop.seventeengames.com`, which is Shopify's uptime, not ours) onto a longer-window template — add to that split only if a new endpoint turns out to be similarly noisy.
 
+## Alert deep links and the netdata registry
+
+The "View node" action on ntfy notifications does NOT use `${goto_url}` from `alarm-notify.sh`, and deliberately so. That variable points at `registry.my-netdata.io/registry-alert-redirect.html` (built at `alarm-notify.sh:2643`, with `NETDATA_REGISTRY_URL` defaulting to the public registry at line 290, since we run no registry of our own — `[registry] enabled = no`).
+
+The registry resolves a machine GUID to an agent URL **per browser**: it only knows URLs at which that specific browser previously loaded that agent's dashboard, keyed by a person GUID in a registry cookie. That design targets agents on private LANs, where no single URL is globally valid. Ours is the opposite case — one agent, one permanent public URL — and notifications are usually opened on a phone that has never loaded the dashboard, so the registry has no mapping and serves "Can't find any Netdata Agent for this alert" every time.
+
+So `custom_sender()` builds the link itself from `NETDATA_DASHBOARD_URL`, using the same shape `registry-alert-redirect.html` would have produced once it resolved an agent URL (its line 101):
+
+```
+${NETDATA_DASHBOARD_URL}/spaces/${host}/rooms/local/alerts/${transition_id}?${redirect_params}
+```
+
+`transition_id` and `redirect_params` are globals set by `alarm-notify.sh` before senders run. The agent serves its SPA for that path (verified: HTTP 200, same index as `/`), so routing happens client-side. The link is behind the dashboard's nginx basic auth (`nginx/files/sites-enabled/netdata`), same as any dashboard URL. If the dashboard ever moves off `netdata.eacs.io`, update `NETDATA_DASHBOARD_URL` at the top of `health_alarm_notify.conf`.
+
+Note the `${host}` in the path is the *alerting* host, which for a child-node alert is the child, not the parent. That case is unverified — click-test a child alert before relying on it.
+
 ## Dead-man's switch setup (healthchecks.io)
 
 `deadman/` needs one-time out-of-band setup; `pyinfra` deploys the timer but cannot create the account or the check.
@@ -199,6 +215,8 @@ Stock alert templates in `/usr/lib/netdata/conf.d/health.d/httpcheck.conf` cover
    ```
 
 5. Test the alert path end to end by pausing the check at healthchecks.io (or `sudo systemctl stop netdata-deadman.timer` and waiting out the grace period) and confirming the ntfy notification arrives.
+
+A down/up pair from healthchecks.io arrives as **two separate ntfy notifications**, unlike netdata's own alerts, which collapse warning → critical → clear into one updating card via `X-Sequence-ID` (see `custom_sender()` in `health_alarm_notify.conf`). That difference is deliberate, not an oversight. healthchecks.io's ntfy integration has no custom-header hook — its form is only topic / server / token / two priorities — so matching netdata's behavior would mean replacing it with the generic Webhook integration, which *does* allow arbitrary headers and fully separate down/up request configs (set the same `X-Sequence-ID` in both). We don't, because: an incident here produces exactly two events rather than a noisy oscillation, a persistent red card is desirable for the alert of last resort (an outage that self-resolves overnight should still be visible in the morning), and hand-rolling the webhook body loses healthchecks' own formatting — downtime duration, ping counts, the tap-through link — in the one notification most likely to be read half-awake. It would also move live config into the healthchecks.io web UI, outside this repo.
 
 Note the deliberate asymmetry: netdata alerts are *evaluated* on egnor-2020 and would go silent with it, so healthchecks.io is the only alert source that survives the host being down. It has exactly one job — keep it that way, and don't move netdata alerts into it.
 
