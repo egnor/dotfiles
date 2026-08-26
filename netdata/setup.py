@@ -13,13 +13,7 @@ from pyinfra.operations.util import any_changed
 if host.get_fact(Directory, "/etc/netdata"):
     role = "parent" if host.get_fact(Hostname) == "egnor-2020" else "child"
 
-    # smartmontools provides `smartctl`, which the go.d smartctl collector
-    # (go.d/smartctl.conf) shells out to via the setuid ndsudo helper for
-    # SMART disk-health metrics + alerts. Physical hosts get real data;
-    # virtualized hosts (e.g. the GCE parent) expose no SMART devices and
-    # the collector idles. Restarting netdata after a first-time install is
-    # what makes the collector notice smartctl, so it's wired into the
-    # restart trigger below.
+    # Add smartctl to enable SMART monitoring where available.
     smart_pkg = None
     if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
         smart_pkg = apt.packages(
@@ -77,10 +71,7 @@ if host.get_fact(Directory, "/etc/netdata"):
             _sudo=True,
         )
 
-        # systemd Environment= for alarm-notify.sh (clear_alarm_always). Unlike
-        # health_alarm_notify.conf this is NOT re-sourced per event -- it is the
-        # service's environment, so it needs daemon-reload + restart to apply.
-        # See the file itself for why this can't live in the notify config.
+        # Hack to set $clear_alarm_always which isn't picked up from configs.
         notify_env = files.put(
             name="netdata.service alarm-notify environment (parent)",
             src="netdata/files.parent/netdata-alarm-notify-env.conf",
@@ -105,10 +96,7 @@ if host.get_fact(Directory, "/etc/netdata"):
         _sudo=True,
     )
 
-    # health.d/ alone could use `netdatacli reload-health` instead of a full
-    # restart, but that resets every alert's status to UNINITIALIZED just as a
-    # restart does (verified), so it avoids none of the notification churn and
-    # is not worth the extra branch.
+    # use a simple restart; things like `reload-health` don't buy much.
     systemd.service(
         name="Restart netdata if config changed",
         service="netdata.service",
