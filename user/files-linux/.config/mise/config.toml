@@ -1,11 +1,12 @@
 [tools]
-fd = "latest"      # used by lazyvim / neovim
-gh = "latest"
-lazygit = "latest" # used by lazyvim / neovim??
-# luajit = "latest"  - doesn't build on pi?
+"github:astral-sh/uv" = "0.12"
+"github:cli/cli" = "latest"
+"github:jesseduffield/lazygit" = "0.64.1"
+"github:BurntSushi/ripgrep" = "15.2"
+"github:zellij-org/zellij" = "0.45"
+# doesn't build on pi?
+# luajit = "latest"
 python = "3.12"
-ripgrep = "latest"
-uv = "0.12"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]
