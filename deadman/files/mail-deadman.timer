@@ -1,0 +1,23 @@
+# Managed by pyinfra. Source: dotfiles/deadman/files/mail-deadman.timer
+# Every 30 minutes against a check configured with period 1h, grace 1h. The
+# 2x oversend is deliberate: a single probe lost to a transient remote
+# deferral still leaves a second one inside the period, so only a sustained
+# delivery failure trips the alert. Worst-case detection is therefore ~2h,
+# which is slow on purpose -- mail is bursty and a ten-minute greylist or
+# Google hiccup should not page anyone.
+#
+# OnCalendar rather than OnUnitActiveSec, matching netdata-deadman.timer:
+# the latter measures from when the previous run finished, so run duration
+# accumulates as drift. Persistent=true makes a boot that missed a firing
+# send immediately, so a reboot is confirmed working rather than just
+# assumed.
+[Unit]
+Description=Send the outbound-mail probe every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

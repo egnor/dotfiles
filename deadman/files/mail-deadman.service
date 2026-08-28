@@ -1,0 +1,14 @@
+# Managed by pyinfra. Source: dotfiles/deadman/files/mail-deadman.service
+[Unit]
+Description=Send the outbound-mail probe to the healthchecks.io email ping address
+Documentation=file:///etc/default/mail-deadman
+# Injection is local (sendmail writes to the maildrop queue), so this needs
+# postfix's spool rather than the network. Ordering after postfix keeps a
+# boot-time firing from landing in the queue before postfix is up to drain
+# it -- harmless either way, but it keeps the probe's timing honest.
+After=postfix.service
+Wants=postfix.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mail-deadman

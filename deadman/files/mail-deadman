@@ -1,0 +1,67 @@
+#!/bin/sh
+# Managed by pyinfra. Source: dotfiles/deadman/files/mail-deadman
+#
+# Dead-man's switch for outbound mail delivery, and the sibling of
+# netdata-deadman in this directory.
+#
+# The probe *is* a mail message: a timer injects one into the local postfix
+# addressed to a healthchecks.io check's email-ping address. Registering the
+# ping requires the whole path to work -- postfix running, the chrooted
+# resolver answering, an MX/A lookup for hc-ping.com, outbound :25 not
+# blocked, and the queue actually moving. Break any link and the pings stop
+# and healthchecks.io alerts to the same ntfy topic netdata uses.
+#
+# Why a round-trip probe instead of a queue-depth alert: this host carries a
+# permanent backlog of undeliverable spam and backscatter that ages out on
+# its own, so depth and even deferral *count* are uninformative -- any
+# threshold is wrong by next month. A delivery that either happens or does
+# not needs no threshold.
+#
+# This is deliberately a separate healthchecks.io check from netdata-deadman,
+# not a second condition inside it, because the pair is diagnostic: both
+# checks down means the host is gone; only this one down means the host is up
+# and the mail path specifically is broken. Folding them together would throw
+# that away.
+#
+# It notably covers the 2026-08-27 outage, where postfix's chrooted
+# resolv.conf snapshot was captured empty during an unattended-upgrade and
+# every remote delivery deferred for 23 hours (see
+# postfix/files/chroot-resolv.conf). The probe would have deferred with the
+# same DNS error and stopped pinging.
+#
+# HC_MAIL_ADDRESS is the check's email-ping address, <uuid>@hc-ping.com. The
+# UUID is a forgeable-ping secret (anyone holding it can suppress the alert
+# by pinging), so it lives out-of-band in /etc/default/mail-deadman rather
+# than in the repo. If it's missing we exit non-zero on purpose: the failed
+# unit trips netdata's systemdunits alert, so a misconfigured probe is itself
+# noticed rather than silently never running.
+#
+# Note the UUID does land in /var/log/mail.log as the recipient of every
+# probe, and in its rotated archives. That is accepted rather than solved:
+# the log is 0640 root:adm on the same host that stores the secret, and the
+# worst a leaked ping URL buys an attacker is the ability to keep this one
+# alert quiet.
+
+set -eu
+
+if [ -r /etc/default/mail-deadman ]; then
+    . /etc/default/mail-deadman
+fi
+
+: "${HC_MAIL_ADDRESS:?unset; put HC_MAIL_ADDRESS=<uuid>@hc-ping.com in /etc/default/mail-deadman}"
+
+# Envelope sender, not just a From: header. Three reasons it is a real
+# address in a local domain: a bounce comes back through aliases_regexp's
+# catch-all to egnor@ofb.net, where a rejection is visible instead of lost;
+# opendkim signs it; and eacs.io is in postsrsd's SRS_EXCLUDE_DOMAINS, so the
+# envelope-from is left alone rather than SRS-rewritten.
+: "${MAIL_DEADMAN_FROM:=mail-deadman@eacs.io}"
+
+# sendmail(1) injects into the maildrop queue and succeeds even when postfix
+# itself is stopped, so a zero exit here does NOT mean the mail was
+# delivered -- that is the point. Only actual arrival registers the ping.
+# A non-zero exit means we could not even inject, which is worth failing the
+# unit for so systemdunits catches it.
+printf 'From: %s\nTo: %s\nSubject: mail-deadman probe\n\nOutbound mail probe from egnor-2020. Source: dotfiles/deadman/files/mail-deadman\n' \
+    "$MAIL_DEADMAN_FROM" "$HC_MAIL_ADDRESS" \
+    | /usr/sbin/sendmail -f "$MAIL_DEADMAN_FROM" -- "$HC_MAIL_ADDRESS"
