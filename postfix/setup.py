@@ -83,6 +83,47 @@ if host.get_fact(Hostname) == "egnor-2020":
         ),
     ]
 
+    # Postfix is chrooted and reads its own copy of resolv.conf, which the
+    # stock ExecStartPre snapshots from /etc/resolv.conf once per start and
+    # never refreshes. /etc/resolv.conf is a symlink into /run/systemd/resolve/
+    # and is rewritten whenever resolved restarts, so that snapshot is a race —
+    # lost once already (see chroot-resolv.conf for the postmortem). Pin the
+    # chroot copy to a static file instead, installed by an appended
+    # ExecStartPre that runs after configure-instance.sh has clobbered it.
+    resolv_updates = [
+        files.put(
+            name="postfix: static chroot resolv.conf source",
+            src="postfix/files/chroot-resolv.conf",
+            dest="/etc/postfix/chroot-resolv.conf",
+            mode="644",
+            _sudo=True,
+        ),
+
+        files.put(
+            name="postfix: chroot resolv.conf drop-in",
+            src="postfix/files/chroot-resolv-dropin.conf",
+            dest="/etc/systemd/system/postfix@.service.d/chroot-resolv.conf",
+            mode="644",
+            _sudo=True,
+        ),
+    ]
+
+    systemd.daemon_reload(
+        name="postfix: daemon-reload for chroot resolv.conf drop-in",
+        _sudo=True,
+        _if=any_changed(*resolv_updates),
+    )
+
+    # A reload won't do: ExecStartPre only runs on start, so the chroot copy
+    # is only replaced by a full restart.
+    systemd.service(
+        name="postfix: restart to apply chroot resolv.conf",
+        service="postfix.service",
+        restarted=True,
+        _sudo=True,
+        _if=any_changed(*resolv_updates),
+    )
+
     # cyrus-sasl tools default to /etc/sasldb2; postfix (chrooted) reads
     # /var/spool/postfix/etc/sasldb2. Symlink so they're the same file —
     # `saslpasswd2 -c -u <realm> <user>` then takes effect immediately,
