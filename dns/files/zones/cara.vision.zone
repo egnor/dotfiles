@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/cara.vision.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/cara.vision.zone
 $ORIGIN cara.vision.
 $TTL 1h
 

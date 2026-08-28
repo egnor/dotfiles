@@ -12,7 +12,7 @@ from pyinfra.operations import files, server, systemd
 if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     # Passwordless sudo for the sudo group, via a drop-in
     files.put(
-        name="sudo: NOPASSWD for sudo group",
+        name="/etc/sudoers.d/sudo-group-nopasswd",
         src="tweaks/files/sudo-group-nopasswd",
         dest="/etc/sudoers.d/sudo-group-nopasswd",
         mode="440",  # sudo refuses files writable by group/other
@@ -24,18 +24,18 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     # resulting /var/lib/apt/periodic/upgrade-stamp is monitored by netdata
     # (netdata/files.*/go.d/filecheck.conf + health.d/apt_upgrade.conf).
     files.put(
-        name="apt: enable unattended upgrades",
+        name="/etc/apt/apt.conf.d/20auto-upgrades",
         src="tweaks/files/apt-auto-upgrades",
         dest="/etc/apt/apt.conf.d/20auto-upgrades",
         mode="644",
         _sudo=True,
     )
 
-    # packagekitd's apt backend has a long-standing leak ; cap RSS so the
+    # packagekitd's apt backend has a long-standing leak; cap RSS so the
     # cgroup OOM killer reaps it before it drags the box into swap.
     if "packagekit.service" in host.get_fact(SystemdEnabled):
         packagekit_update = files.put(
-            name="packagekit: memory cap drop-in",
+            name="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
             src="tweaks/files/packagekit-memory-limit.conf",
             dest="/etc/systemd/system/packagekit.service.d/memory-limit.conf",
             mode="644",
@@ -60,10 +60,10 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     # plugged in -- inconvenient when the same chips show up on embedded dev
     # boards. We can't just remove brltty (ubuntu-desktop-minimal Depends on
     # it), so override the rules file with an empty same-named file in /etc/.
-    # To revert: rm /etc/udev/rules.d/85-brltty.rules && udevadm control --reload
+    # Revert: rm /etc/udev/rules.d/85-brltty.rules && udevadm control --reload
     if host.get_fact(File, path="/usr/lib/udev/rules.d/85-brltty.rules"):
         brltty_override = files.put(
-            name="brltty: empty udev rules override",
+            name="/etc/udev/rules.d/85-brltty.rules",
             src="tweaks/files/brltty-udev-override.rules",
             dest="/etc/udev/rules.d/85-brltty.rules",
             mode="644",
@@ -85,11 +85,11 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     # files existing so older Ubuntu (no split, single working rule) is left
     # alone. See tweaks/files/logrotate-cloud-init-stub for the full rationale.
     # No reload needed -- logrotate.timer re-reads config on its next run.
-    if host.get_fact(File, path="/etc/logrotate.d/cloud-init") and host.get_fact(
-        File, path="/etc/logrotate.d/cloud-init-base"
-    ):
+    if host.get_fact(
+        File, path="/etc/logrotate.d/cloud-init"
+    ) and host.get_fact(File, path="/etc/logrotate.d/cloud-init-base"):
         files.put(
-            name="logrotate: stub duplicate cloud-init rule",
+            name="/etc/logrotate.d/cloud-init",
             src="tweaks/files/logrotate-cloud-init-stub",
             dest="/etc/logrotate.d/cloud-init",
             mode="644",
@@ -118,7 +118,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     # Switching an existing snap-firefox install over is a one-time manual
     # step (`snap remove firefox && apt install firefox`); not done here.
     files.put(
-        name="mozilla: apt signing key",
+        name="/etc/apt/keyrings/packages.mozilla.org.asc",
         src="tweaks/files/mozilla-apt-keyring.asc",
         dest="/etc/apt/keyrings/packages.mozilla.org.asc",
         mode="644",
@@ -126,7 +126,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     )
 
     files.put(
-        name="mozilla: apt source",
+        name="/etc/apt/sources.list.d/mozilla.sources",
         src="tweaks/files/mozilla-apt-source.sources",
         dest="/etc/apt/sources.list.d/mozilla.sources",
         mode="644",
@@ -134,7 +134,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     )
 
     files.put(
-        name="mozilla: apt pin priority",
+        name="/etc/apt/preferences.d/mozilla",
         src="tweaks/files/mozilla-apt-pin",
         dest="/etc/apt/preferences.d/mozilla",
         mode="644",
@@ -142,7 +142,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     )
 
     files.put(
-        name="mozilla: unattended-upgrades origins-pattern",
+        name="/etc/apt/apt.conf.d/51unattended-upgrades-mozilla",
         src="tweaks/files/mozilla-unattended-upgrades.conf",
         dest="/etc/apt/apt.conf.d/51unattended-upgrades-mozilla",
         mode="644",
@@ -152,7 +152,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     # Remove any leftover blanket firefox block from unattended-upgrades --
     # the mozilla source IS where we want updates to come from now.
     files.file(
-        name="mozilla: drop legacy firefox block",
+        name="/etc/apt/apt.conf.d/52unattended-block-firefox",
         path="/etc/apt/apt.conf.d/52unattended-block-firefox",
         present=False,
         _sudo=True,
@@ -161,7 +161,7 @@ if host.get_fact(LinuxName) == "Ubuntu":
     # Likewise drop the mozillateam-PPA allowlist entry from the pre-
     # packages.mozilla.org approach; that PPA is no longer a configured source.
     files.file(
-        name="mozilla: drop legacy mozillateam allowlist",
+        name="/etc/apt/apt.conf.d/51unattended-upgrades-firefox",
         path="/etc/apt/apt.conf.d/51unattended-upgrades-firefox",
         present=False,
         _sudo=True,

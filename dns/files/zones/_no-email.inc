@@ -1,9 +1,8 @@
-; Managed by pyinfra. Source: dns/files/zones/_no-email.inc
-; "This domain does not send or receive mail" trifecta. Include alongside
-; _common.inc on zones that have no MX/SPF/DKIM of their own. MUST NOT
-; be included on a mail-serving zone — two v=spf1 TXTs at the same name
-; is a permerror per RFC 7208, and a null MX next to a real MX is
-; nonsense.
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/_no-email.inc
+
+; "This domain does not send or receive mail" trifecta.
+; Include alongside _common.inc on zones that have no MX/SPF/DKIM.
+; MUST NOT be included on a mail-serving zone!
 
 ; Null MX (RFC 7505): well-behaved senders abort at MX lookup instead
 ; of after a TCP refusal. Cheap kindness to receivers.

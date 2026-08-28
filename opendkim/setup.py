@@ -15,7 +15,7 @@ from pyinfra.operations.util import any_changed
 if host.get_fact(Hostname) == "egnor-2020":
     config_updates = [
         files.put(
-            name="opendkim: opendkim.conf",
+            name="/etc/opendkim.conf",
             src="opendkim/files/opendkim.conf",
             dest="/etc/opendkim.conf",
             mode="644",
@@ -24,7 +24,7 @@ if host.get_fact(Hostname) == "egnor-2020":
         # /etc/dkimkeys/ is mode 700 owned by opendkim — files.put runs as root
         # via sudo so it can write inside, then we re-set owner=opendkim.
         files.put(
-            name="opendkim: key.table",
+            name="/etc/dkimkeys/key.table",
             src="opendkim/files/key.table",
             dest="/etc/dkimkeys/key.table",
             user="opendkim",
@@ -33,7 +33,7 @@ if host.get_fact(Hostname) == "egnor-2020":
             _sudo=True,
         ),
         files.put(
-            name="opendkim: signing.table",
+            name="/etc/dkimkeys/signing.table",
             src="opendkim/files/signing.table",
             dest="/etc/dkimkeys/signing.table",
             user="opendkim",
@@ -42,7 +42,7 @@ if host.get_fact(Hostname) == "egnor-2020":
             _sudo=True,
         ),
         files.put(
-            name="opendkim: trusted.hosts",
+            name="/etc/dkimkeys/trusted.hosts",
             src="opendkim/files/trusted.hosts",
             dest="/etc/dkimkeys/trusted.hosts",
             user="opendkim",
@@ -53,7 +53,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     ]
 
     systemd.service(
-        name="opendkim: restart on config change",
+        name="opendkim restart for config change",
         service="opendkim.service",
         restarted=True,
         _sudo=True,

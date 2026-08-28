@@ -1,4 +1,4 @@
-// Managed by pyinfra. Source: tweaks/files/apt-auto-upgrades
+// Managed by pyinfra. Source: dotfiles/tweaks/files/apt-auto-upgrades
 // Make sure unattended-upgrades (automatic security updates) actually runs.
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";

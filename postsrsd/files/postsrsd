@@ -1,4 +1,5 @@
-# Managed by pyinfra. Source: postsrsd/files/postsrsd
+# Managed by pyinfra. Source: dotfiles/postsrsd/files/postsrsd
+#
 # Defaults file for the postsrsd Sender Rewriting Scheme daemon.
 # Reference: man postsrsd  /  /usr/share/doc/postsrsd/
 #

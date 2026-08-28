@@ -1,0 +1,12 @@
+# Managed by pyinfra. Source: dotfiles/postfix/files/postfix-ping-healthchecks.timer
+[Unit]
+Description=Send an outbound-mail probe to healthchecks.io every 30 minutes
+
+[Timer]
+# OnCalendar= (not OnUnitActiveSec=) and Persistent=true to avoid drift
+OnCalendar=*:0/30
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

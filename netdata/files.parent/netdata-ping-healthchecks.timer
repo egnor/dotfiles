@@ -1,0 +1,12 @@
+# Managed by pyinfra. Source: dotfiles/netdata/files.parent/netdata-ping-healthchecks.timer
+[Unit]
+Description=Ping the netdata dead-man's switch every 5 minutes
+
+[Timer]
+# OnCalendar= (not OnUnitActiveSec=) and Persistent=true to avoid drift
+OnCalendar=*:0/5
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

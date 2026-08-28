@@ -1,0 +1,12 @@
+# Managed by pyinfra. Source: dotfiles/postfix/files/postfix-ping-healthchecks.service
+#
+# End-to-end test of outgoing email, evaluated externally (healthchecks.io)
+
+[Unit]
+Description=Send an outbound-mail probe to healthchecks.io
+After=postfix.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=30
+ExecStart=/usr/local/sbin/postfix-ping-healthchecks.py

@@ -10,7 +10,7 @@ from pyinfra.operations.util import any_changed
 if host.get_fact(Hostname) == "egnor-2020":
     config_updates = [
         files.put(
-            name="nginx.conf",
+            name="/etc/nginx/nginx.conf",
             src="nginx/files/nginx.conf",
             dest="/etc/nginx/nginx.conf",
             mode="644",
@@ -19,7 +19,7 @@ if host.get_fact(Hostname) == "egnor-2020":
         # snippets/ ships package files (fastcgi-php.conf, snakeoil.conf);
         # don't delete those — only add ours.
         files.sync(
-            name="snippets/",
+            name="/etc/nginx/snippets/",
             src="nginx/files/snippets",
             dest="/etc/nginx/snippets",
             mode="644",
@@ -27,7 +27,7 @@ if host.get_fact(Hostname) == "egnor-2020":
             _sudo=True,
         ),
         files.sync(
-            name="sites-enabled/",
+            name="/etc/nginx/sites-enabled/",
             src="nginx/files/sites-enabled",
             dest="/etc/nginx/sites-enabled",
             mode="644",
@@ -41,14 +41,14 @@ if host.get_fact(Hostname) == "egnor-2020":
     # snippet (included in every :443 server) serves /.well-known/... from
     # this directory.
     files.directory(
-        name="ACME webroot",
+        name="/var/www/letsencrypt/ directory",
         path="/var/www/letsencrypt",
         mode="755",
         _sudo=True,
     )
 
     systemd.service(
-        name="Reload nginx if any config changed",
+        name="nginx reload for config change",
         service="nginx.service",
         reloaded=True,
         _sudo=True,

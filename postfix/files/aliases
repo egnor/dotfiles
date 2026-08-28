@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: postfix/files/aliases
+# Managed by pyinfra. Source: dotfiles/postfix/files/aliases
 #
 # This file is deliberately empty of entries.
 #

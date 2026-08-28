@@ -19,7 +19,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # alias_maps, and shouldn't be hashed — so no newaliases trigger, and any
     # leftover /etc/aliases.db from a previous deploy is removed.
     files.put(
-        name="postfix: /etc/aliases (inert, see file header)",
+        name="/etc/aliases (inert, see file header)",
         src="postfix/files/aliases",
         dest="/etc/aliases",
         mode="644",
@@ -27,7 +27,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     )
 
     files.file(
-        name="postfix: remove stale /etc/aliases.db",
+        name="remove stale /etc/aliases.db",
         path="/etc/aliases.db",
         present=False,
         _sudo=True,
@@ -35,47 +35,42 @@ if host.get_fact(Hostname) == "egnor-2020":
 
     config_updates = [
         files.put(
-            name="postfix: aliases_regexp",
+            name="/etc/postfix/aliases_regexp",
             src="postfix/files/aliases_regexp",
             dest="/etc/postfix/aliases_regexp",
             mode="644",
             _sudo=True,
         ),
-
         files.put(
-            name="postfix: /etc/mailname",
+            name="/etc/mailname",
             src="postfix/files/mailname",
             dest="/etc/mailname",
             mode="644",
             _sudo=True,
         ),
-
         files.put(
-            name="postfix: main.cf",
+            name="/etc/postfix/main.cf",
             src="postfix/files/main.cf",
             dest="/etc/postfix/main.cf",
             mode="644",
             _sudo=True,
         ),
-
         files.put(
-            name="postfix: master.cf",
+            name="/etc/postfix/master.cf",
             src="postfix/files/master.cf",
             dest="/etc/postfix/master.cf",
             mode="644",
             _sudo=True,
         ),
-
         files.put(
-            name="postfix: sasl/smtpd.conf",
+            name="/etc/postfix/sasl/smtpd.conf",
             src="postfix/files/sasl/smtpd.conf",
             dest="/etc/postfix/sasl/smtpd.conf",
             mode="644",
             _sudo=True,
         ),
-
         virtual_update := files.put(
-            name="postfix: virtual (alias map source)",
+            name="/etc/postfix/virtual",
             src="postfix/files/virtual",
             dest="/etc/postfix/virtual",
             mode="644",
@@ -83,68 +78,91 @@ if host.get_fact(Hostname) == "egnor-2020":
         ),
     ]
 
-    # Postfix is chrooted and reads its own copy of resolv.conf, which the
-    # stock ExecStartPre snapshots from /etc/resolv.conf once per start and
-    # never refreshes. /etc/resolv.conf is a symlink into /run/systemd/resolve/
-    # and is rewritten whenever resolved restarts, so that snapshot is a race —
-    # lost once already (see chroot-resolv.conf for the postmortem). Pin the
-    # chroot copy to a static file instead, installed by an appended
-    # ExecStartPre that runs after configure-instance.sh has clobbered it.
-    resolv_updates = [
-        files.put(
-            name="postfix: static chroot resolv.conf source",
-            src="postfix/files/chroot-resolv.conf",
-            dest="/etc/postfix/chroot-resolv.conf",
-            mode="644",
-            _sudo=True,
-        ),
+    # Drop-in to replace the chroot-jail resolv.conf with a static file
+    systemd_resolv_update = files.put(
+        name="postfix@.service.d/fix-chroot-resolv.conf",
+        src="postfix/files/fix-chroot-resolv.conf",
+        dest="/etc/systemd/system/postfix@.service.d/fix-chroot-resolv.conf",
+        mode="644",
+        create_remote_dir=True,
+        _sudo=True,
+    )
 
-        files.put(
-            name="postfix: chroot resolv.conf drop-in",
-            src="postfix/files/chroot-resolv-dropin.conf",
-            dest="/etc/systemd/system/postfix@.service.d/chroot-resolv.conf",
-            mode="644",
-            _sudo=True,
-        ),
-    ]
+    files.put(
+        name="/usr/local/sbin/postfix-ping-healthchecks.py",
+        src="postfix/files/postfix-ping-healthchecks.py",
+        dest="/usr/local/sbin/postfix-ping-healthchecks.py",
+        mode="755",
+        _sudo=True,
+    )
+
+    ping_service_update = files.put(
+        name="postfix-ping-healthchecks.service",
+        src="postfix/files/postfix-ping-healthchecks.service",
+        dest="/etc/systemd/system/postfix-ping-healthchecks.service",
+        mode="644",
+        _sudo=True,
+    )
+
+    ping_timer_update = files.put(
+        name="postfix-ping-healthchecks.timer",
+        src="postfix/files/postfix-ping-healthchecks.timer",
+        dest="/etc/systemd/system/postfix-ping-healthchecks.timer",
+        mode="644",
+        _sudo=True,
+    )
 
     systemd.daemon_reload(
-        name="postfix: daemon-reload for chroot resolv.conf drop-in",
+        name="systemd reload for postfix",
         _sudo=True,
-        _if=any_changed(*resolv_updates),
+        _if=any_changed(
+            systemd_resolv_update, ping_service_update, ping_timer_update
+        ),
     )
 
-    # A reload won't do: ExecStartPre only runs on start, so the chroot copy
-    # is only replaced by a full restart.
     systemd.service(
-        name="postfix: restart to apply chroot resolv.conf",
-        service="postfix.service",
+        name="postfix-ping-healthchecks.timer enable",
+        service="postfix-ping-healthchecks.timer",
+        running=True,
+        enabled=True,
+        _sudo=True,
+    )
+
+    systemd.service(
+        name="postfix-ping-healthchecks.timer restart",
+        service="postfix-ping-healthchecks.timer",
         restarted=True,
         _sudo=True,
-        _if=any_changed(*resolv_updates),
+        _if=any_changed(ping_timer_update),
     )
 
-    # cyrus-sasl tools default to /etc/sasldb2; postfix (chrooted) reads
-    # /var/spool/postfix/etc/sasldb2. Symlink so they're the same file —
-    # `saslpasswd2 -c -u <realm> <user>` then takes effect immediately,
-    # no separate sync step needed (sasldb is read per-auth anyway).
+    # store sasldb2 in the postfix chroot jail
     files.link(
-        name="postfix: /etc/sasldb2 → chroot copy",
+        name="sasldb2 link to chroot",
         path="/etc/sasldb2",
         target="/var/spool/postfix/etc/sasldb2",
         _sudo=True,
     )
 
+    # restart, not reload - needs ExecStartPre to install file
+    systemd.service(
+        name="postfix restart to apply chroot resolv.conf",
+        service="postfix.service",
+        restarted=True,
+        _sudo=True,
+        _if=any_changed(systemd_resolv_update),
+    )
+
     # /etc/postfix/virtual.db is generated by postmap; rebuild on source change.
     server.shell(
-        name="postfix: postmap virtual",
+        name="postmap virtual",
         commands=["postmap /etc/postfix/virtual"],
         _sudo=True,
         _if=virtual_update.did_change,
     )
 
     systemd.service(
-        name="postfix: reload on config change",
+        name="postfix reload for config change",
         service="postfix.service",
         reloaded=True,
         _sudo=True,

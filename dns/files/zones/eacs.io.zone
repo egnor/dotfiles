@@ -1,4 +1,5 @@
-; Managed by pyinfra. Source: dns/files/zones/eacs.io.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/eacs.io.zone
+;
 ; Self-hosting zone: this host is in postfix's mydestination, runs the
 ; nameserver as ns1.eacs.io, and opendkim signs outgoing with selector "mail".
 $ORIGIN eacs.io.

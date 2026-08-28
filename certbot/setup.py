@@ -9,7 +9,7 @@ from pyinfra.operations import files
 
 if host.get_fact(Hostname) == "egnor-2020":
     files.put(
-        name="certbot: cli.ini",
+        name="/etc/letsencrypt/cli.ini",
         src="certbot/files/cli.ini",
         dest="/etc/letsencrypt/cli.ini",
         mode="644",
@@ -17,7 +17,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     )
 
     files.put(
-        name="certbot: reload-nginx deploy hook",
+        name="/etc/letsencrypt/renewal-hooks/deploy/reload-nginx",
         src="certbot/files/reload-nginx",
         dest="/etc/letsencrypt/renewal-hooks/deploy/reload-nginx",
         mode="755",

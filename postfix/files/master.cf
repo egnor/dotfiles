@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: postfix/files/master.cf
+# Managed by pyinfra. Source: dotfiles/postfix/files/master.cf
 # Postfix master process configuration.  See: man 5 master
 #
 # Trimmed to listeners + core daemons. Stock-uncommented pipe entries

@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/puzzlehuntcalendar.org.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/puzzlehuntcalendar.org.zone
 $ORIGIN puzzlehuntcalendar.org.
 $TTL 1h
 

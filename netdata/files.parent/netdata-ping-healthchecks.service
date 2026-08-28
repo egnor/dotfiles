@@ -1,0 +1,14 @@
+# Managed by pyinfra. Source: dotfiles/netdata/files.parent/netdata-ping-healthchecks.service
+#
+# Use an external monitor (healthchecks.io) to watch the (netdata) watchman;
+# alerts if this host goes down, or if netdata isn't running/responding
+
+[Unit]
+Description=Ping the healthchecks.io dead-man's switch for the netdata parent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=60
+ExecStart=/usr/local/sbin/netdata-ping-healthchecks.py

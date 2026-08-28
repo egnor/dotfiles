@@ -35,7 +35,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # it releases the sockets. The host keeps a working resolver (the
     # non-stub file lists Linode's upstreams that resolved tracks via DHCP).
     resolved_dropin = files.put(
-        name="resolved: DNSStubListener=no drop-in",
+        name="/etc/systemd/resolved.conf.d/no-stub.conf",
         src="dns/files/resolved-no-stub.conf",
         dest="/etc/systemd/resolved.conf.d/no-stub.conf",
         mode="644",
@@ -52,7 +52,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     )
 
     systemd.service(
-        name="resolved: restart to drop stub listener",
+        name="resolved restart to drop stub listener",
         service="systemd-resolved.service",
         restarted=True,
         _sudo=True,
@@ -66,7 +66,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # /etc/hosts entry so the hostname resolves from /etc/nsswitch's `files`
     # source instead.
     files.line(
-        name="/etc/hosts: 127.0.1.1 egnor-2020",
+        name="/etc/hosts",
         path="/etc/hosts",
         line=r"^127\.0\.1\.1\s+egnor-2020(\s|$)",
         replace="127.0.1.1\tegnor-2020.ofb.net\tegnor-2020",
@@ -75,7 +75,7 @@ if host.get_fact(Hostname) == "egnor-2020":
 
     config_updates = [
         files.put(
-            name="knot.conf",
+            name="/etc/knot/knot.conf",
             src="dns/files/knot.conf",
             dest="/etc/knot/knot.conf",
             user="root",
@@ -84,7 +84,7 @@ if host.get_fact(Hostname) == "egnor-2020":
             _sudo=True,
         ),
         files.sync(
-            name="zones/",
+            name="/etc/knot/zones/",
             src="dns/files/zones",
             dest="/etc/knot/zones",
             user="root",
@@ -100,7 +100,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # Aborts the deploy if knotc rejects the config, leaving BIND still in
     # place. Re-runs on every deploy (cheap) so manual edits get caught too.
     server.shell(
-        name="knot: conf-check before BIND stop",
+        name="knotc conf-check before BIND stop",
         commands=["knotc -c /etc/knot/knot.conf conf-check"],
         _sudo=True,
     )
@@ -108,7 +108,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # Only now do we stop BIND. If the config check above failed, we never
     # reach this line and BIND keeps owning port 53.
     bind_off = systemd.service(
-        name="bind9: stop + disable (Knot takes over port 53)",
+        name="bind9 stop + disable for knot",
         service="named.service",
         running=False,
         enabled=False,
@@ -116,7 +116,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     )
 
     systemd.service(
-        name="knot: enable + ensure running",
+        name="knot.service enable",
         service="knot.service",
         running=True,
         enabled=True,
@@ -126,7 +126,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     # Restart (not reload) so Knot re-attempts the :53 socket bind, in case
     # it had previously failed to grab the port while BIND held it.
     systemd.service(
-        name="knot: restart on config change / BIND stop / resolved drop-in",
+        name="knot.service restart for config change",
         service="knot.service",
         restarted=True,
         _sudo=True,

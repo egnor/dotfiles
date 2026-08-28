@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/puzzlehunts.org.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/puzzlehunts.org.zone
 $ORIGIN puzzlehunts.org.
 $TTL 1h
 

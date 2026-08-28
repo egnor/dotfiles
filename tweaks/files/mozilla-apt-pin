@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: tweaks/files/mozilla-apt-pin
+# Managed by pyinfra. Source: dotfiles/tweaks/files/mozilla-apt-pin
 Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000

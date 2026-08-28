@@ -1,4 +1,5 @@
-; Managed by pyinfra. Source: dns/files/zones/_common.inc
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/_common.inc
+;
 ; Shared apex records for every zone served from egnor-2020.
 ; Included by each per-zone .zone file *after* its $ORIGIN and SOA.
 

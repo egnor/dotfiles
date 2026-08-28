@@ -1,4 +1,5 @@
-; Managed by pyinfra. Source: dns/files/zones/teamleftout.org.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/teamleftout.org.zone
+;
 ; Bespoke — Google Workspace mail, short.cm URL shortener at go.*,
 ; puzzletron at ptron.* (CNAMEd off to isotropic.org, with its own DKIM
 ; selector for mailgun). Migrated from ofb's teamleftout.zone.

@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/gorey.games.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/gorey.games.zone
 $ORIGIN gorey.games.
 $TTL 1h
 

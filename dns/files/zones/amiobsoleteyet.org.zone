@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/amiobsoleteyet.org.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/amiobsoleteyet.org.zone
 $ORIGIN amiobsoleteyet.org.
 $TTL 1h
 

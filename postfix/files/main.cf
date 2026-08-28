@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: postfix/files/main.cf
+# Managed by pyinfra. Source: dotfiles/postfix/files/main.cf
 # Reference: /usr/share/postfix/main.cf.dist  /  man 5 postconf
 
 # === Identity ===

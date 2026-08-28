@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/egnor.services.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/egnor.services.zone
 $ORIGIN egnor.services.
 $TTL 1h
 

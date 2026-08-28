@@ -17,7 +17,7 @@ from pyinfra.operations import files, systemd
 
 if host.get_fact(Hostname) == "egnor-2020":
     config = files.put(
-        name="postsrsd: /etc/default/postsrsd",
+        name="/etc/default/postsrsd",
         src="postsrsd/files/postsrsd",
         dest="/etc/default/postsrsd",
         mode="644",
@@ -25,7 +25,7 @@ if host.get_fact(Hostname) == "egnor-2020":
     )
 
     systemd.service(
-        name="postsrsd: restart on config change",
+        name="postsrsd restart for config change",
         service="postsrsd.service",
         restarted=True,
         _sudo=True,

@@ -4,3 +4,6 @@ dependencies = ["pyinfra>=3.8.0"]
 name = "egnor-dotfiles"
 requires-python = ">=3.12"
 version = "0.0"
+
+[tool.ruff]
+line-length = 80

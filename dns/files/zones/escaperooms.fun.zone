@@ -1,4 +1,4 @@
-; Managed by pyinfra. Source: dns/files/zones/escaperooms.fun.zone
+; Managed by pyinfra. Source: dotfiles/dns/files/zones/escaperooms.fun.zone
 $ORIGIN escaperooms.fun.
 $TTL 1h
 
