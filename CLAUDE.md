@@ -23,13 +23,13 @@ Each top-level subdirectory is one *area*: a `setup.py` plus a `files/` director
 
 - `deploy.py` — entrypoint. A list of `local.include(...)` calls, one per area, alphabetical except for the trailing `postsrsd/` → `postfix/` pair, which is order-dependent (see `postsrsd/` below). Keep it that way when adding an area.
 - `nginx/` — host-specific (gated on `Hostname == "egnor-2020"`). Manages `/etc/nginx/nginx.conf` whole-file, the contents of `/etc/nginx/sites-enabled/` via `files.sync(delete=True)`, an `acme-challenge.conf` snippet under `/etc/nginx/snippets/`, and the `/var/www/letsencrypt` ACME webroot. The Debian sites-available/sites-enabled split is dropped — files go directly to sites-enabled/. Every `:443` server block includes the ACME snippet so all certs can use the same shared webroot.
-- `certbot/` — host-specific (same gate). Manages `/etc/letsencrypt/cli.ini` (sets `authenticator = webroot` so certbot never edits nginx) and a `renewal-hooks/deploy/reload-nginx` script. The package's `certbot.timer` handles renewal; we just configure what it does.
+- `certbot/` — host-specific (same gate). Manages `/etc/letsencrypt/cli.ini` (sets `authenticator = webroot` so certbot never edits nginx) and a `renewal-hooks/deploy/reload-nginx` script. Note it is not the only thing writing to `renewal-hooks/deploy/` — `mosquitto/` installs its own cert-copy hook there, next to this one; see "Mosquitto TLS on :8883". The package's `certbot.timer` handles renewal; we just configure what it does.
 - `postfix/` — host-specific (`Hostname == "egnor-2020"`). Manages `/etc/postfix/{main.cf, master.cf, virtual, aliases_regexp}` and `/etc/postfix/sasl/smtpd.conf`, plus `/etc/mailname`. Triggers `postmap virtual` on source change. `/etc/aliases` is shipped as an inert comment-only file (postfix's `alias_maps` points only at `aliases_regexp`, and that file's `/.*/ egnor@ofb.net` catch-all already routes every local recipient); the corresponding `/etc/aliases.db` is actively removed by the deploy so nothing stale lingers. The cyrus-sasl password DB (`sasldb2`) is NOT in the repo (live secrets, plaintext-equivalent due to CRAM-MD5/DIGEST-MD5) — see "SASL password workflow" below. `/etc/sasldb2` is a symlink to `/var/spool/postfix/etc/sasldb2` (the chroot copy) so cyrus-sasl tools, which default to `/etc/sasldb2`, target the same file postfix reads. Also pins postfix's chrooted resolver: a drop-in at `/etc/systemd/system/postfix@.service.d/fix-chroot-resolv.conf` (source: `postfix/files/fix-chroot-resolv.conf`) appends a second `ExecStartPre` — a short inline python program that writes `/var/spool/postfix/etc/resolv.conf` from a fixed list: `173.230.145.5` (Linode recursive, closest, and DNSBL-queryable unlike the public resolvers), `1.1.1.1`, `8.8.8.8`, plus `options timeout:2 attempts:2`. glibc honors only the first three `nameserver` lines (MAXNS), so those three are the whole list, one per failure domain, and the order is load-bearing — a dead or wrong first entry costs the `timeout:2` on every lookup. The stock `ExecStartPre` (`/usr/lib/postfix/configure-instance.sh`) snapshots `/etc/resolv.conf` into the chroot once per start and never refreshes it; because `/etc/resolv.conf` is a symlink into `/run/systemd/resolve/` that resolved rewrites on every restart (and tailscaled restarts resolved whenever it reasserts MagicDNS), that snapshot is a race. It was lost on 2026-08-27: an openssl unattended-upgrade daemon-reexec'd systemd and restarted networkd, resolved (twice, 104ms apart) and postfix inside one second, and postfix captured a resolv.conf with no nameservers. glibc's fallback is `127.0.0.1:53`, which here is Knot — authoritative-only, `REFUSED` for everything else — which postfix reports as `Host not found, try again`, so every remote delivery deferred for 23 hours. `systemd` runs `ExecStartPre` lines in order and drop-ins append, so ours lands after the snapshot and before `ExecStart`. Changing the drop-in needs a postfix **restart**, not a reload, since `ExecStartPre` only runs on start — `postfix/setup.py` wires that as a separate op from the ordinary config reload. Note the package also ships `postfix-resolvconf.path` (watch `/etc/resolv.conf`, re-sync, reload) — deliberately left disabled, since it would have shortened that outage but not prevented it, and it keeps postfix's resolver coupled to resolved's restart timing. Finally, `postfix/` carries the outbound-mail dead-man's switch — `/usr/local/sbin/postfix-ping-healthchecks.py` and its `.service` + `.timer`, firing every 30 minutes — because the probe is an actual mail message and so belongs with the MTA it exercises; see "Dead-man's switches" below.
 - `opendkim/` — host-specific (same gate). Manages `/etc/opendkim.conf` and the three text tables under `/etc/dkimkeys/` (`signing.table`, `key.table`, `trusted.hosts`). The `.private` keys stay out-of-band (live secrets). Wired into postfix as a milter via `local:opendkim/opendkim.sock` (a unix socket inside postfix's chroot).
 - `postsrsd/` — host-specific (same gate). Manages `/etc/default/postsrsd` for the Sender Rewriting Scheme daemon. Wired into postfix via `{sender,recipient}_canonical_maps = tcp:127.0.0.1:{10001,10002}` so mail FORWARDED through this host (alias_maps / virtual_alias_maps re-injection) gets its envelope-from rewritten to an SRS-encoded `@eacs.io` address — preserves SPF alignment at the next hop without forging the original sender. `SRS_EXCLUDE_DOMAINS` lists every domain whose envelope-from should be left alone: our local mail-receiving domains (eacs.io, approximately.competent.services, blackletterlabs.com, seventeengames.com) PLUS `ofb.net`, because this host is ofb's outbound :25 relay (GCE blocks outbound :25 from ofb), and ofb.net's SPF already authorizes 104.200.25.248 directly. Other ofb-hosted domains (tattoobag.com, etc.) are NOT excluded — when those appear in envelope-from here, it's via ofb-side forwarding of probably-spoofed mail, which is exactly what SRS should rewrite. The HMAC secret at `/etc/postsrsd.secret` is package-generated on first install (mode 0600, owner=postsrs) and stays out of the repo. `postsrsd/` is included in `deploy.py` BEFORE `postfix/` so postsrsd is configured + running before postfix reload activates the canonical_maps lookup.
 - `dns/` — host-specific (`Hostname == "egnor-2020"`). Knot DNS authoritative server. Primary for user-owned zones, with source-of-truth zone files at `/etc/knot/zones/` managed from this repo and Hurricane Electric (`ns{1..5}.he.net`) as the AXFR-pulling secondary, registered per-zone at `dns.he.net`. Replaces BIND9 — `dns/setup.py` stops and disables `named.service` so Knot can claim port 53. Also drops in `DNSStubListener=no` for systemd-resolved (and repoints `/etc/resolv.conf` at the non-stub `/run/systemd/resolve/resolv.conf` that resolved still maintains) so the stub on `127.0.0.53` doesn't conflict with Knot's `0.0.0.0:53` bind. Knot's mutable state (journals, slave-zone caches) stays at the package default `/var/lib/knot/`; primary-zone files in `knot.conf` use absolute paths into `/etc/knot/zones/`. Knot bumps SOA serials itself (`serial-policy: unixtime`, `zonefile-load: difference-no-serial`, `journal-content: all`) so primary zone files can keep `1` as the serial forever.
 - `netdata/` — Netdata config. Parent vs child role picked by hostname (`egnor-2020` is the parent; everywhere else is a child streaming up to it). On Linux, manages `netdata.conf` + `stream.conf` (config dir `/etc/netdata`), plus the `go.d/` and `health.d/` overrides, and installs `smartmontools` so the go.d `smartctl` collector reports SMART disk health on physical hosts; alerts are evaluated on the parent (`files.parent/health.d/`) since children run with `[health] enabled = no`. Fleet-wide alerts beyond SMART: failed systemd service units (`health.d/systemdunits.conf` — netdata ships this template disabled via a match-nothing `unit_name=!*` selector; our same-named file replaces the stock one and enables it) and unattended-upgrades freshness (`go.d/filecheck.conf` on parent+children watches `/var/lib/apt/periodic/upgrade-stamp`, touched only on successful u-u runs; `health.d/apt_upgrade.conf` alerts on stale or never-created stamps — needed because `apt.systemd.daily` swallows u-u's exit code, so u-u failures never fail the systemd unit). External endpoints (our sites plus Shopify-hosted `shop.seventeengames.com`) are probed from the parent by `go.d/httpcheck.conf` — plain 200-OK jobs and redirect-assertion jobs (`not_follow_redirects` + `status_accepted` + `header_match` on `Location`, so a changed redirect target alerts until the config is updated to match) — with cert expiry covered separately by `go.d/x509check.conf`, one job per (host, port). This replaces what used to be a handful of uptimerobot monitors emailing on failure. The parent also carries the netdata dead-man's switch — `/usr/local/sbin/netdata-ping-healthchecks.py` and its `.service` + `.timer`, firing every 5 minutes — which is the one alert that must originate outside this host, since netdata cannot report its own death; see "Dead-man's switches" below.
-- `mosquitto/` — host-specific (same gate). Mosquitto MQTT broker. The package's `/etc/mosquitto/mosquitto.conf` is used verbatim — verified byte-identical to the shipped conffile with `dpkg --verify mosquitto`, and worth re-checking before assuming so again — since all it does is set persistence/log defaults and `include_dir /etc/mosquitto/conf.d`. So the area manages exactly one drop-in, `conf.d/egnor_1883.conf`: resource caps, `persistence false` (overriding the stock `persistence true`, because `conf.d/` is included last), and a password-authenticated `listener 1883` on all interfaces. Restart rather than reload on change — the resource caps, `persistence`, and `password_file` all reload on SIGHUP, but `listener` is documented as "Not reloaded on reload signal", so a SIGHUP would silently no-op a port or bind-address change. The password file is not in the repo; see "Mosquitto MQTT broker passwords" below.
+- `mosquitto/` — host-specific (same gate). Mosquitto MQTT broker, TLS-only on `:8883` (`mqtt.eacs.io`), plus `mosquitto-clients` for testing it. The package's `/etc/mosquitto/mosquitto.conf` is used verbatim — verified byte-identical to the shipped conffile with `dpkg --verify mosquitto`, and worth re-checking before assuming so again — since all it does is set persistence/log defaults and `include_dir /etc/mosquitto/conf.d`. So the area manages one drop-in, `conf.d/egnor_mqtt.conf`: resource caps, `persistence false` (overriding the stock `persistence true`, because `conf.d/` is included last), and a password-authenticated TLS listener. Restart rather than reload on change — the resource caps, `persistence`, `password_file`, and the TLS certs all reload on SIGHUP, but `listener` is documented as "Not reloaded on reload signal", so a SIGHUP would silently no-op a port change. Certs are *copies* under `/etc/mosquitto/certs/` refreshed by the `mosquitto-install-certs` certbot deploy hook, because mosquitto loads them after dropping privileges and can't read `/etc/letsencrypt`; the password file is out-of-band, and a build-time fact check fails the deploy if it's missing rather than restarting into a broker that won't start. See "Mosquitto MQTT broker passwords" and "Mosquitto TLS on :8883" below.
 - `user/` — per-user dotfiles, gated on `Os == "Linux"` (skips BSD, OS X, and other non-Linux). `setup.py` symlinks every leaf under `user/files-linux/` into the target's `$HOME`, plus `user/files-linux-modern/` on Ubuntu 20.04+ (tools whose prebuilt binaries need a recent glibc — mise conf.d, the LazyVim nvim config). `user/copy-files/` holds the few files that must be copied not linked (e.g. `.forward`). A "leaf" is a regular file, a symlink, or a directory containing `.git` (the latter two are linked as a unit, not recursed into). Probes `~/source/dotfiles` and `~/dotfiles` for an existing checkout (and clones to `~/dotfiles` otherwise).
 - `tweaks/` — root-owned `/etc` / systemd drop-ins, gated on facts (`LinuxName`, etc.) so the file is safe to run on any host — inapplicable tweaks just skip. Each tweak: `files.put` followed by `systemd.daemon_reload` + `systemd.service` chained via `_if=op.did_change` so reloads only happen on real changes.
 
@@ -71,22 +71,20 @@ The realm flag (`-u`) is just a namespace inside sasldb — it does not have to 
 
 ## Mosquitto MQTT broker passwords
 
-`/etc/mosquitto/conf.d/egnor_1883.passwd` is *not* in the repo, for the same
+`/etc/mosquitto/conf.d/egnor_mqtt.passwd` is *not* in the repo, for the same
 reason `sasldb2` isn't. The hashes are PBKDF2-SHA512 (`$7$`), so unlike sasldb
-they aren't plaintext-equivalent — but the broker answers on `0.0.0.0:1883` and
-the log shows continuous credential-guessing from scanners, so publishing the
-hashes would hand an offline dictionary attack to exactly the population already
-trying online. Note also that until :8883 exists, passwords cross the wire in
-the clear on every real connection; that is the stronger argument for TLS, not
-the file's mode.
+they aren't plaintext-equivalent — but the broker answers on the public
+internet and its log shows continuous credential-guessing from scanners, so
+publishing the hashes would hand an offline dictionary attack to exactly the
+population already trying online.
 
 To add or rotate an account:
 
 ```
-sudo mosquitto_passwd -c /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # NEW FILE, wipes existing
-sudo mosquitto_passwd    /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # add or update one user
-sudo mosquitto_passwd -D /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # delete
-sudo cut -d: -f1 /etc/mosquitto/conf.d/egnor_1883.passwd                 # list users
+sudo mosquitto_passwd    /etc/mosquitto/conf.d/egnor_mqtt.passwd <user>  # add or update one user
+sudo mosquitto_passwd -D /etc/mosquitto/conf.d/egnor_mqtt.passwd <user>  # delete
+sudo mosquitto_passwd -c /etc/mosquitto/conf.d/egnor_mqtt.passwd <user>  # NEW FILE, wipes existing
+sudo cut -d: -f1 /etc/mosquitto/conf.d/egnor_mqtt.passwd                 # list users
 sudo systemctl reload mosquitto                                          # SIGHUP re-reads it
 ```
 
@@ -96,12 +94,27 @@ other account. It belongs only in first-time setup on a fresh host.
 Unlike sasldb, this file does need a signal — mosquitto caches it in memory —
 but a `reload` (SIGHUP) is enough; no restart and no pyinfra deploy.
 
+`sudo mosquitto_passwd` prints "File ... owner is not root. Future versions will
+refuse to load this file." Ignore it. That check compares against the *calling*
+process, and the file is deliberately owned by `mosquitto`, because the broker
+runs the same check against the user it drops privileges to and wants the
+opposite answer. The two tools cannot both be satisfied; the broker is the one
+that would refuse to start, so it wins. `mosquitto_passwd` writes via a
+same-directory temp file and rename, so it preserves owner and mode — the
+warning is cosmetic and nothing needs fixing afterwards. `mosquitto/setup.py`
+converges the file to `0600 mosquitto:mosquitto` anyway, so a hand-restored copy
+gets corrected on the next deploy. Don't try to fix the warning by running
+`mosquitto_passwd` as the mosquitto user: `/etc/mosquitto/conf.d/` is
+`0755 root:root`, and the rename needs write permission on the directory.
+
 Losing the file fails closed, which is why leaving it unmanaged is safe: with
 `allow_anonymous false` and a `password_file` that doesn't exist, mosquitto
 exits 13 at startup ("Error opening password file") rather than coming up
-accepting anyone. So a fresh host gets a broker that won't start until the file
-is restored — loud, and in the right direction. It also means restoring the file
-is a required manual step in any rebuild, alongside `sasldb2` and the DKIM keys.
+accepting anyone. `mosquitto/setup.py` catches that case earlier still — a
+build-time fact check raises `DeployError` before any op runs, so a fresh host
+refuses to deploy rather than restarting into a broker that won't come back.
+Restoring this file is a required manual step in any rebuild, alongside
+`sasldb2` and the DKIM keys.
 
 Encrypted-in-repo secrets (age, `sops`, pyinfra's suggested `privy`) were
 considered and skipped. pyinfra adds no mechanism around any of them, so it
@@ -113,22 +126,95 @@ decrypt) works there because the key is shared across a team; here it isn't.
 Revisit if the number of out-of-band secrets grows past the current four
 (`sasldb2`, the DKIM `.private` keys, `/etc/postsrsd.secret`, this file).
 
-### TLS on :8883 — not yet enabled
+## Mosquitto TLS on :8883
 
-The intended shape is a second drop-in with `listener 8883` +
-`certfile`/`keyfile`, reusing the existing `competent.services` certbot cert
-(which already covers `eacs.io` and `www.eacs.io`; `mqtt.eacs.io` would have to
-be added to the cert's `-d` list, or clients just connect to `eacs.io:8883`).
+The broker is TLS-only. Clients connect to **`mqtt.eacs.io:8883`** and
+authenticate with a username/password from the file above. There is no
+plaintext `:1883` listener — there was one, on all interfaces, until 2026-09.
 
-The obstacle is file access, not config: `/etc/letsencrypt/{live,archive}` are
-mode 0700 root, and mosquitto reads its cert files *after* dropping privileges
-to the `mosquitto` user on SIGHUP. Loosening those directories exposes every
-private key on the host to whatever gets group access, so the better fix is a
-`renewal-hooks/deploy/` script alongside `reload-nginx` that copies just the two
-files into `/etc/mosquitto/certs/` owned by `mosquitto`, then reloads the
-broker. There is a vestigial `ssl-cert` group here (gid 119, sole member
-`prosody`, which is masked and inactive) — don't mistake it for an existing
-solution.
+The cert is the shared `competent.services` letsencrypt lineage (the same one
+nginx serves for eacs.io and friends), expanded to carry `mqtt.eacs.io`.
+`mqtt.eacs.io` resolves through the `* CNAME @` wildcard in `_common.inc`, and
+the `http-redirect` `default_server` on :80 includes the ACME snippet, so
+HTTP-01 validation for it works with no nginx change.
+
+### Why the certs are copied instead of referenced
+
+`/etc/letsencrypt/{live,archive}` are both mode 0700 root, and **mosquitto loads
+its certificate after dropping privileges** — a broker started as root with
+`certfile` pointing into `/etc/letsencrypt/live/` fails with:
+
+```
+Error: Unable to load server certificate "...". Check certfile.
+OpenSSL Error[0]: error:8000000D:system library::Permission denied
+```
+
+So `certfile`/`keyfile` point at copies in `/etc/mosquitto/certs/`, owned
+`mosquitto:mosquitto` mode 0640, placed by
+`mosquitto/files/mosquitto-install-certs`. That script is installed as a certbot
+deploy hook and is also run directly by `mosquitto/setup.py`, because certbot
+fires deploy hooks only on an actual renewal — the first copy on a new host has
+to come from the deploy. It is idempotent (compares content, copies and reloads
+only on a difference) and stages through a same-directory temp file so a reload
+never sees a half-written cert.
+
+Two things it must keep doing: filtering on `$RENEWED_LINEAGE`, since certbot
+runs every deploy hook once per renewed cert and ~17 other lineages renew on
+this host; and reloading rather than restarting, since mosquitto(8) reloads TLS
+certificates on SIGHUP and a restart would drop every client for no reason.
+
+`setup.py` decides whether to run the script by comparing SHA256 facts for both
+files, so a converged host shows no work. Facts (unlike `_if`) are evaluated
+under `--dry`, so the preview stays honest.
+
+The hook lives in `mosquitto/` rather than `certbot/` — unlike `reload-nginx`,
+which is in `certbot/`, it is not a generic post-renewal action but part of how
+this one service gets its certs, and `mosquitto/setup.py` has to run it. Same
+reasoning as the mail dead-man's switch living in `postfix/`.
+
+There is a vestigial `ssl-cert` group here (gid 119, sole member `prosody`,
+which is masked and inactive) — it is not part of this and not a shortcut.
+
+### Verifying
+
+`mosquitto-clients` is installed by the area for exactly this:
+
+```
+mosquitto_sub -h mqtt.eacs.io -p 8883 --capath /etc/ssl/certs \
+    -u <user> -P <pass> -t 'test/#' -v
+mosquitto_pub -h mqtt.eacs.io -p 8883 --capath /etc/ssl/certs \
+    -u <user> -P <pass> -t 'test/hello' -m hi
+```
+
+Omitting `--capath`/`--cafile` makes the client skip verification, which hides
+a broken cert copy — always pass one. To check the served cert and hostname
+match directly:
+
+```
+echo | openssl s_client -connect mqtt.eacs.io:8883 -verify_hostname mqtt.eacs.io 2>&1 \
+    | grep -E "Verify return code|subject="
+```
+
+### Renewing or changing the cert
+
+Renewal is automatic and needs nothing. To change which names the cert carries,
+repeat the whole `-d` list — `certbot certonly` replaces the set rather than
+adding to it, and a dropped name silently stops working:
+
+```
+sudo certbot certonly --cert-name competent.services --expand --dry-run -d ... # staging first
+sudo certbot certonly --cert-name competent.services --expand -d ...
+```
+
+`--dry-run` validates every name against the staging CA without spending a
+production issuance; run it first, since the rate limit is 5 identical name
+sets per week. The current list is in
+`/etc/letsencrypt/renewal/competent.services.conf` under `[[webroot_map]]`.
+
+Changing the *lineage* mosquitto uses means editing `LINEAGE` in both
+`mosquitto/files/mosquitto-install-certs` and `mosquitto/setup.py`. They are
+deliberately two constants rather than one — the script has to stand alone as a
+certbot hook, with no pyinfra at hook time.
 
 ## Adding a zone to the Knot nameserver
 

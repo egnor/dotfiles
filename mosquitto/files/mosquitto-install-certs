@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+# Managed by pyinfra. Source: dotfiles/mosquitto/files/mosquitto-install-certs
+#
+# Copies TLS certs from certbot to mosquitto directory to allow access.
+
+import filecmp
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+ORIGIN_DIR = Path("/etc/letsencrypt/live/competent.services")
+DEST_DIR = Path("/etc/mosquitto/certs")
+FILENAMES = ["fullchain.pem", "privkey.pem"]
+
+# skip if some other certificate is being renewed
+if Path(os.environ.get("RENEWED_LINEAGE") or ORIGIN_DIR) != ORIGIN_DIR:
+    raise SystemExit(0)
+
+if filecmp.cmpfiles(ORIGIN_DIR, DEST_DIR, FILENAMES)[0] != FILENAMES:
+    for name in FILENAMES:
+        temp = DEST_DIR / f"{name}.new"
+        shutil.copy(ORIGIN_DIR / name, temp)
+        shutil.chown(temp, user="mosquitto", group="mosquitto")
+        os.rename(temp, DEST_DIR / name)
+
+    # reload suffices to pick up certs
+    if subprocess.call(["systemctl", "is-active", "--quiet", "mosquitto"]) == 0:
+        subprocess.check_call(["systemctl", "reload", "mosquitto"])
