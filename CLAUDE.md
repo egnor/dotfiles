@@ -29,6 +29,7 @@ Each top-level subdirectory is one *area*: a `setup.py` plus a `files/` director
 - `postsrsd/` — host-specific (same gate). Manages `/etc/default/postsrsd` for the Sender Rewriting Scheme daemon. Wired into postfix via `{sender,recipient}_canonical_maps = tcp:127.0.0.1:{10001,10002}` so mail FORWARDED through this host (alias_maps / virtual_alias_maps re-injection) gets its envelope-from rewritten to an SRS-encoded `@eacs.io` address — preserves SPF alignment at the next hop without forging the original sender. `SRS_EXCLUDE_DOMAINS` lists every domain whose envelope-from should be left alone: our local mail-receiving domains (eacs.io, approximately.competent.services, blackletterlabs.com, seventeengames.com) PLUS `ofb.net`, because this host is ofb's outbound :25 relay (GCE blocks outbound :25 from ofb), and ofb.net's SPF already authorizes 104.200.25.248 directly. Other ofb-hosted domains (tattoobag.com, etc.) are NOT excluded — when those appear in envelope-from here, it's via ofb-side forwarding of probably-spoofed mail, which is exactly what SRS should rewrite. The HMAC secret at `/etc/postsrsd.secret` is package-generated on first install (mode 0600, owner=postsrs) and stays out of the repo. `postsrsd/` is included in `deploy.py` BEFORE `postfix/` so postsrsd is configured + running before postfix reload activates the canonical_maps lookup.
 - `dns/` — host-specific (`Hostname == "egnor-2020"`). Knot DNS authoritative server. Primary for user-owned zones, with source-of-truth zone files at `/etc/knot/zones/` managed from this repo and Hurricane Electric (`ns{1..5}.he.net`) as the AXFR-pulling secondary, registered per-zone at `dns.he.net`. Replaces BIND9 — `dns/setup.py` stops and disables `named.service` so Knot can claim port 53. Also drops in `DNSStubListener=no` for systemd-resolved (and repoints `/etc/resolv.conf` at the non-stub `/run/systemd/resolve/resolv.conf` that resolved still maintains) so the stub on `127.0.0.53` doesn't conflict with Knot's `0.0.0.0:53` bind. Knot's mutable state (journals, slave-zone caches) stays at the package default `/var/lib/knot/`; primary-zone files in `knot.conf` use absolute paths into `/etc/knot/zones/`. Knot bumps SOA serials itself (`serial-policy: unixtime`, `zonefile-load: difference-no-serial`, `journal-content: all`) so primary zone files can keep `1` as the serial forever.
 - `netdata/` — Netdata config. Parent vs child role picked by hostname (`egnor-2020` is the parent; everywhere else is a child streaming up to it). On Linux, manages `netdata.conf` + `stream.conf` (config dir `/etc/netdata`), plus the `go.d/` and `health.d/` overrides, and installs `smartmontools` so the go.d `smartctl` collector reports SMART disk health on physical hosts; alerts are evaluated on the parent (`files.parent/health.d/`) since children run with `[health] enabled = no`. Fleet-wide alerts beyond SMART: failed systemd service units (`health.d/systemdunits.conf` — netdata ships this template disabled via a match-nothing `unit_name=!*` selector; our same-named file replaces the stock one and enables it) and unattended-upgrades freshness (`go.d/filecheck.conf` on parent+children watches `/var/lib/apt/periodic/upgrade-stamp`, touched only on successful u-u runs; `health.d/apt_upgrade.conf` alerts on stale or never-created stamps — needed because `apt.systemd.daily` swallows u-u's exit code, so u-u failures never fail the systemd unit). External endpoints (our sites plus Shopify-hosted `shop.seventeengames.com`) are probed from the parent by `go.d/httpcheck.conf` — plain 200-OK jobs and redirect-assertion jobs (`not_follow_redirects` + `status_accepted` + `header_match` on `Location`, so a changed redirect target alerts until the config is updated to match) — with cert expiry covered separately by `go.d/x509check.conf`, one job per (host, port). This replaces what used to be a handful of uptimerobot monitors emailing on failure. The parent also carries the netdata dead-man's switch — `/usr/local/sbin/netdata-ping-healthchecks.py` and its `.service` + `.timer`, firing every 5 minutes — which is the one alert that must originate outside this host, since netdata cannot report its own death; see "Dead-man's switches" below.
+- `mosquitto/` — host-specific (same gate). Mosquitto MQTT broker. The package's `/etc/mosquitto/mosquitto.conf` is used verbatim — verified byte-identical to the shipped conffile with `dpkg --verify mosquitto`, and worth re-checking before assuming so again — since all it does is set persistence/log defaults and `include_dir /etc/mosquitto/conf.d`. So the area manages exactly one drop-in, `conf.d/egnor_1883.conf`: resource caps, `persistence false` (overriding the stock `persistence true`, because `conf.d/` is included last), and a password-authenticated `listener 1883` on all interfaces. Restart rather than reload on change — the resource caps, `persistence`, and `password_file` all reload on SIGHUP, but `listener` is documented as "Not reloaded on reload signal", so a SIGHUP would silently no-op a port or bind-address change. The password file is not in the repo; see "Mosquitto MQTT broker passwords" below.
 - `user/` — per-user dotfiles, gated on `Os == "Linux"` (skips BSD, OS X, and other non-Linux). `setup.py` symlinks every leaf under `user/files-linux/` into the target's `$HOME`, plus `user/files-linux-modern/` on Ubuntu 20.04+ (tools whose prebuilt binaries need a recent glibc — mise conf.d, the LazyVim nvim config). `user/copy-files/` holds the few files that must be copied not linked (e.g. `.forward`). A "leaf" is a regular file, a symlink, or a directory containing `.git` (the latter two are linked as a unit, not recursed into). Probes `~/source/dotfiles` and `~/dotfiles` for an existing checkout (and clones to `~/dotfiles` otherwise).
 - `tweaks/` — root-owned `/etc` / systemd drop-ins, gated on facts (`LinuxName`, etc.) so the file is safe to run on any host — inapplicable tweaks just skip. Each tweak: `files.put` followed by `systemd.daemon_reload` + `systemd.service` chained via `_if=op.did_change` so reloads only happen on real changes.
 
@@ -67,6 +68,67 @@ sudo sasldblistusers2                                            # list (no pass
 ```
 
 The realm flag (`-u`) is just a namespace inside sasldb — it does not have to match `myhostname` or any DNS name. Clients authenticate as `<user>@<realm>`, and cyrus-sasl splits on `@` to look up the entry. If the client sends a bare username with no `@`, the default realm is `$myhostname` (postfix's cyrus-sasl integration), so picking the realm to match `myhostname` is *one* sensible convention but not a requirement. In practice the entries on this host are stored at the user's own domain (e.g. `egnor@ofb.net`, `shop@seventeengames.com`) so they survive `myhostname` changes untouched. No postfix reload or pyinfra deploy is needed; sasldb is read per-authentication.
+
+## Mosquitto MQTT broker passwords
+
+`/etc/mosquitto/conf.d/egnor_1883.passwd` is *not* in the repo, for the same
+reason `sasldb2` isn't. The hashes are PBKDF2-SHA512 (`$7$`), so unlike sasldb
+they aren't plaintext-equivalent — but the broker answers on `0.0.0.0:1883` and
+the log shows continuous credential-guessing from scanners, so publishing the
+hashes would hand an offline dictionary attack to exactly the population already
+trying online. Note also that until :8883 exists, passwords cross the wire in
+the clear on every real connection; that is the stronger argument for TLS, not
+the file's mode.
+
+To add or rotate an account:
+
+```
+sudo mosquitto_passwd -c /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # NEW FILE, wipes existing
+sudo mosquitto_passwd    /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # add or update one user
+sudo mosquitto_passwd -D /etc/mosquitto/conf.d/egnor_1883.passwd <user>  # delete
+sudo cut -d: -f1 /etc/mosquitto/conf.d/egnor_1883.passwd                 # list users
+sudo systemctl reload mosquitto                                          # SIGHUP re-reads it
+```
+
+Mind the `-c`: it *creates* the file from scratch and silently discards every
+other account. It belongs only in first-time setup on a fresh host.
+
+Unlike sasldb, this file does need a signal — mosquitto caches it in memory —
+but a `reload` (SIGHUP) is enough; no restart and no pyinfra deploy.
+
+Losing the file fails closed, which is why leaving it unmanaged is safe: with
+`allow_anonymous false` and a `password_file` that doesn't exist, mosquitto
+exits 13 at startup ("Error opening password file") rather than coming up
+accepting anyone. So a fresh host gets a broker that won't start until the file
+is restored — loud, and in the right direction. It also means restoring the file
+is a required manual step in any rebuild, alongside `sasldb2` and the DKIM keys.
+
+Encrypted-in-repo secrets (age, `sops`, pyinfra's suggested `privy`) were
+considered and skipped. pyinfra adds no mechanism around any of them, so it
+would mean a decrypt step in every deploy plus a key to distribute and rotate —
+and the key has to live *outside* the repo anyway, so the bottom line is still
+"one secret you restore by hand", just with more moving parts. The
+`~/drain_teaser` pattern (an age-encrypted key in the repo, `mise run unlock` to
+decrypt) works there because the key is shared across a team; here it isn't.
+Revisit if the number of out-of-band secrets grows past the current four
+(`sasldb2`, the DKIM `.private` keys, `/etc/postsrsd.secret`, this file).
+
+### TLS on :8883 — not yet enabled
+
+The intended shape is a second drop-in with `listener 8883` +
+`certfile`/`keyfile`, reusing the existing `competent.services` certbot cert
+(which already covers `eacs.io` and `www.eacs.io`; `mqtt.eacs.io` would have to
+be added to the cert's `-d` list, or clients just connect to `eacs.io:8883`).
+
+The obstacle is file access, not config: `/etc/letsencrypt/{live,archive}` are
+mode 0700 root, and mosquitto reads its cert files *after* dropping privileges
+to the `mosquitto` user on SIGHUP. Loosening those directories exposes every
+private key on the host to whatever gets group access, so the better fix is a
+`renewal-hooks/deploy/` script alongside `reload-nginx` that copies just the two
+files into `/etc/mosquitto/certs/` owned by `mosquitto`, then reloads the
+broker. There is a vestigial `ssl-cert` group here (gid 119, sole member
+`prosody`, which is masked and inactive) — don't mistake it for an existing
+solution.
 
 ## Adding a zone to the Knot nameserver
 

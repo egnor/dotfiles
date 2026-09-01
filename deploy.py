@@ -8,6 +8,7 @@ from pyinfra import local
 
 local.include("certbot/setup.py")
 local.include("dns/setup.py")
+local.include("mosquitto/setup.py")
 local.include("netdata/setup.py")
 local.include("nginx/setup.py")
 local.include("opendkim/setup.py")
