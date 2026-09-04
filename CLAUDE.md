@@ -324,17 +324,22 @@ Stock alert templates in `/usr/lib/netdata/conf.d/health.d/httpcheck.conf` cover
 
 ## Alert deep links and the netdata registry
 
-The "View node" action on ntfy notifications does NOT use `${goto_url}` from `alarm-notify.sh`, and deliberately so. That variable points at `registry.my-netdata.io/registry-alert-redirect.html` (built at `alarm-notify.sh:2643`, with `NETDATA_REGISTRY_URL` defaulting to the public registry at line 290, since we run no registry of our own — `[registry] enabled = no`).
+Every sender in `alarm-notify.sh` — the stock email template's "GO TO CHART", any other stock sender, and our `custom_sender()` for ntfy — links to `${goto_url}`, built at `alarm-notify.sh:2643` as `${NETDATA_REGISTRY_URL}/registry-alert-redirect.html?...&transition_id=...&host=...`. `NETDATA_REGISTRY_URL` defaults to the public `registry.my-netdata.io` at line 290, since we run no registry of our own.
 
 The registry resolves a machine GUID to an agent URL **per browser**: it only knows URLs at which that specific browser previously loaded that agent's dashboard, keyed by a person GUID in a registry cookie. That design targets agents on private LANs, where no single URL is globally valid. Ours is the opposite case — one agent, one permanent public URL — and notifications are usually opened on a phone that has never loaded the dashboard, so the registry has no mapping and serves "Can't find any Netdata Agent for this alert" every time.
 
-So `custom_sender()` builds the link itself from `NETDATA_DASHBOARD_URL`, using the same shape `registry-alert-redirect.html` would have produced once it resolved an agent URL (its line 101):
+The fix is in two halves, and both are needed:
+
+1. `health_alarm_notify.conf` sets `NETDATA_REGISTRY_URL="https://netdata.eacs.io"`. Our file is sourced at line 519, after the line-290 default and before `goto_url` is computed, so every sender picks it up — no sender override needed. (An earlier version fixed only `custom_sender()`, building its own direct link, and left the email link broken.)
+2. `nginx/files/sites-enabled/netdata` has `location = /registry-alert-redirect.html`, which `return 302`s to `/spaces/$arg_host/rooms/local/alerts/$arg_transition_id?$args` — the same shape the real `registry-alert-redirect.html` would produce once it resolved an agent URL (its line 101). The agent serves its SPA for that path (verified: HTTP 200, same index as `/`), so routing happens client-side. `return` runs in nginx's rewrite phase, before `auth_basic`, so the 302 itself is unauthenticated; the target is behind basic auth like any dashboard URL.
+
+Test the mapping without credentials:
 
 ```
-${NETDATA_DASHBOARD_URL}/spaces/${host}/rooms/local/alerts/${transition_id}?${redirect_params}
+curl -sI 'https://netdata.eacs.io/registry-alert-redirect.html?host=skully&transition_id=abc' | grep -i location
 ```
 
-`transition_id` and `redirect_params` are globals set by `alarm-notify.sh` before senders run. The agent serves its SPA for that path (verified: HTTP 200, same index as `/`), so routing happens client-side. The link is behind the dashboard's nginx basic auth (`nginx/files/sites-enabled/netdata`), same as any dashboard URL. If the dashboard ever moves off `netdata.eacs.io`, update `NETDATA_DASHBOARD_URL` at the top of `health_alarm_notify.conf`.
+If the dashboard ever moves off `netdata.eacs.io`, update `NETDATA_REGISTRY_URL` in `health_alarm_notify.conf` and move the nginx location with the site.
 
 Note the `${host}` in the path is the *alerting* host, which for a child-node alert is the child, not the parent. That case is unverified — click-test a child alert before relying on it.
 
