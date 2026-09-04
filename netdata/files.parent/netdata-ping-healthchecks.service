@@ -10,5 +10,6 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-TimeoutStartSec=60
+# Budget for the script's retries (3x20s netdata + 3x20s ping, plus waits).
+TimeoutStartSec=240
 ExecStart=/usr/local/sbin/netdata-ping-healthchecks.py
