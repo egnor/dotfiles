@@ -1,0 +1,7 @@
+# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-brltty-disable.rules
+#
+# Empty override for /usr/lib/udev/rules.d/85-brltty.rules
+# (udev gives same-named files in /etc/udev/rules.d/ precedence).
+# The brltty rules tag common USB serial adapters (CP210x, FT232, CH341, ...)
+# as potential braille displays, which makes brltty-udev.service grab them,
+# which is annoying for embedded development.

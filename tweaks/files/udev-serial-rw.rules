@@ -1,0 +1,9 @@
+# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-serial-rw.rules
+#
+# Make every serial port world read/write and off-limits to ModemManager.
+#
+# tty[A-Z]* covers ttyUSB, ttyACM, ttyS, ttyAMA, ... and deliberately skips
+# the virtual consoles (tty[0-9]*) and ttyprintk, which remain as default.
+# ID_MM_*_IGNORE keeps ModemManager from putting its grubby paws on these.
+
+SUBSYSTEM=="tty", KERNEL=="tty[A-Z]*", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1", ENV{ID_MM_PORT_IGNORE}="1"

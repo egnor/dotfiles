@@ -3,10 +3,11 @@
 # inapplicable ones simply skip.
 
 from pyinfra import host
-from pyinfra.facts.files import File
+from pyinfra.facts.files import Directory, File
 from pyinfra.facts.server import LinuxName
 from pyinfra.facts.systemd import SystemdEnabled
 from pyinfra.operations import files, server, systemd
+from pyinfra.operations.util import any_changed
 
 # "Ubuntu", "Debian", "Fedora", ... or None on non-Linux
 if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
@@ -55,26 +56,60 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
             _if=packagekit_update.did_change,
         )
 
-    # brltty ships udev rules that tag common USB serial adapters as braille
-    # displays, so brltty-udev.service grabs /dev/ttyUSB* the moment one is
-    # plugged in -- inconvenient when the same chips show up on embedded dev
-    # boards. We can't just remove brltty (ubuntu-desktop-minimal Depends on
-    # it), so override the rules file with an empty same-named file in /etc/.
-    # Revert: rm /etc/udev/rules.d/85-brltty.rules && udevadm control --reload
-    if host.get_fact(File, path="/usr/lib/udev/rules.d/85-brltty.rules"):
-        brltty_override = files.put(
-            name="/etc/udev/rules.d/85-brltty.rules",
-            src="tweaks/files/brltty-udev-override.rules",
-            dest="/etc/udev/rules.d/85-brltty.rules",
-            mode="644",
-            _sudo=True,
-        )
+    # udev rules for embedded development: serial ports and USB dev tools
+    # (debug probes, bootloaders, protocol analyzers) usable without root on
+    # every machine, so a widget that works on one desk works on the next.
+    # Sources are named for what they do; targets keep the numeric prefixes
+    # udev sorts on. udev-brltty-disable.rules is the odd one out -- an EMPTY file
+    # whose only job is to shadow the same-named file in /usr/lib/, so it's
+    # gated on that file existing; see its header for why we can't just
+    # remove the package. Only affects devices plugged in after the reload:
+    # re-plug (or `udevadm trigger`) anything already attached.
+    if host.get_fact(Directory, path="/etc/udev/rules.d"):
+        udev_rules = [
+            ("udev-serial-rw.rules", "60-serial-rw.rules"),
+            ("udev-odrive.rules", "91-odrive.rules"),
+            ("udev-platformio.rules", "99-platformio-udev.rules"),
+            ("udev-totalphase.rules", "99-totalphase.rules"),
+        ]
+        if host.get_fact(File, path="/usr/lib/udev/rules.d/85-brltty.rules"):
+            udev_rules.append(("udev-brltty-disable.rules", "85-brltty.rules"))
+
+        udev_updates = [
+            files.put(
+                name=f"/etc/udev/rules.d/{dest}",
+                src=f"tweaks/files/{src}",
+                dest=f"/etc/udev/rules.d/{dest}",
+                user="root",
+                group="root",
+                mode="644",
+                _sudo=True,
+            )
+            for src, dest in udev_rules
+        ]
+
+        # Retired: the pre-pyinfra serial rule (replaced by 60-serial-rw),
+        # an Ultimate Hacking Keyboard, and a Brother scanner, neither owned
+        # any more.
+        udev_updates += [
+            files.file(
+                name=f"/etc/udev/rules.d/{old}",
+                path=f"/etc/udev/rules.d/{old}",
+                present=False,
+                _sudo=True,
+            )
+            for old in (
+                "50-serial.rules",
+                "50-uhk60.rules",
+                "60-brother-libsane-type1-inst.rules",
+            )
+        ]
 
         server.shell(
-            name="brltty: reload udev rules",
+            name="udev: reload rules",
             commands=["udevadm control --reload"],
             _sudo=True,
-            _if=brltty_override.did_change,
+            _if=any_changed(*udev_updates),
         )
 
     # The cloud-init -> cloud-init-base package split left two IDENTICAL
