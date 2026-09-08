@@ -13,7 +13,7 @@
 [pull]
 	ff = only
 [push]
-	default = upstream
+	default = simple
 [submodule]
 	recurse = true
 [user]
