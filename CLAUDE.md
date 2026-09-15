@@ -29,7 +29,7 @@ Each top-level subdirectory is one *area*: a `setup.py` plus a `files/` director
 - `postsrsd/` — host-specific (same gate). Manages `/etc/default/postsrsd` for the Sender Rewriting Scheme daemon. Wired into postfix via `{sender,recipient}_canonical_maps = tcp:127.0.0.1:{10001,10002}` so mail FORWARDED through this host (alias_maps / virtual_alias_maps re-injection) gets its envelope-from rewritten to an SRS-encoded `@eacs.io` address — preserves SPF alignment at the next hop without forging the original sender. `SRS_EXCLUDE_DOMAINS` lists every domain whose envelope-from should be left alone: our local mail-receiving domains (eacs.io, approximately.competent.services, blackletterlabs.com, seventeengames.com) PLUS `ofb.net`, because this host is ofb's outbound :25 relay (GCE blocks outbound :25 from ofb), and ofb.net's SPF already authorizes 104.200.25.248 directly. Other ofb-hosted domains (tattoobag.com, etc.) are NOT excluded — when those appear in envelope-from here, it's via ofb-side forwarding of probably-spoofed mail, which is exactly what SRS should rewrite. The HMAC secret at `/etc/postsrsd.secret` is package-generated on first install (mode 0600, owner=postsrs) and stays out of the repo. `postsrsd/` is included in `deploy.py` BEFORE `postfix/` so postsrsd is configured + running before postfix reload activates the canonical_maps lookup.
 - `dns/` — host-specific (`Hostname == "egnor-2020"`). Knot DNS authoritative server. Primary for user-owned zones, with source-of-truth zone files at `/etc/knot/zones/` managed from this repo and Hurricane Electric (`ns{1..5}.he.net`) as the AXFR-pulling secondary, registered per-zone at `dns.he.net`. Replaces BIND9 — `dns/setup.py` stops and disables `named.service` so Knot can claim port 53. Also drops in `DNSStubListener=no` for systemd-resolved (and repoints `/etc/resolv.conf` at the non-stub `/run/systemd/resolve/resolv.conf` that resolved still maintains) so the stub on `127.0.0.53` doesn't conflict with Knot's `0.0.0.0:53` bind. Knot's mutable state (journals, slave-zone caches) stays at the package default `/var/lib/knot/`; primary-zone files in `knot.conf` use absolute paths into `/etc/knot/zones/`. Knot bumps SOA serials itself (`serial-policy: unixtime`, `zonefile-load: difference-no-serial`, `journal-content: all`) so primary zone files can keep `1` as the serial forever.
 - `netdata/` — Netdata config. Parent vs child role picked by hostname (`egnor-2020` is the parent; everywhere else is a child streaming up to it). On Linux, manages `netdata.conf` + `stream.conf` (config dir `/etc/netdata`), plus the `go.d/` and `health.d/` overrides, and installs `smartmontools` so the go.d `smartctl` collector reports SMART disk health on physical hosts; alerts are evaluated on the parent (`files.parent/health.d/`) since children run with `[health] enabled = no`. Fleet-wide alerts beyond SMART: failed systemd service units (`health.d/systemdunits.conf` — netdata ships this template disabled via a match-nothing `unit_name=!*` selector; our same-named file replaces the stock one and enables it, and adds a second template with `delay: up 7d` for units whose failure is tolerable short-term, like `apport-autoreport`, which fails whenever Ubuntu's error tracker is down; a unit goes on both `chart labels:` lines to move lanes) and unattended-upgrades freshness (`go.d/filecheck.conf` on parent+children watches `/var/lib/apt/periodic/upgrade-stamp`, touched only on successful u-u runs; `health.d/apt_upgrade.conf` alerts on stale or never-created stamps — needed because `apt.systemd.daily` swallows u-u's exit code, so u-u failures never fail the systemd unit). External endpoints (our sites plus Shopify-hosted `shop.seventeengames.com`) are probed from the parent by `go.d/httpcheck.conf` — plain 200-OK jobs and redirect-assertion jobs (`not_follow_redirects` + `status_accepted` + `header_match` on `Location`, so a changed redirect target alerts until the config is updated to match) — with cert expiry covered separately by `go.d/x509check.conf`, one job per (host, port). This replaces what used to be a handful of uptimerobot monitors emailing on failure. The parent also carries the netdata dead-man's switch — `/usr/local/sbin/netdata-ping-healthchecks.py` and its `.service` + `.timer`, firing every 5 minutes — which is the one alert that must originate outside this host, since netdata cannot report its own death; see "Dead-man's switches" below.
-- `mosquitto/` — host-specific (same gate). Mosquitto MQTT broker, TLS-only on `:8883` (`mqtt.eacs.io`), plus `mosquitto-clients` for testing it. The package's `/etc/mosquitto/mosquitto.conf` is used verbatim — verified byte-identical to the shipped conffile with `dpkg --verify mosquitto`, and worth re-checking before assuming so again — since all it does is set persistence/log defaults and `include_dir /etc/mosquitto/conf.d`. So the area manages one drop-in, `conf.d/egnor_mqtt.conf`: resource caps, `persistence false` (overriding the stock `persistence true`, because `conf.d/` is included last), and a password-authenticated TLS listener. Restart rather than reload on change — the resource caps, `persistence`, `password_file`, and the TLS certs all reload on SIGHUP, but `listener` is documented as "Not reloaded on reload signal", so a SIGHUP would silently no-op a port change. Certs are *copies* under `/etc/mosquitto/certs/` refreshed by the `mosquitto-install-certs` certbot deploy hook, because mosquitto loads them after dropping privileges and can't read `/etc/letsencrypt`; the password file is out-of-band, and a build-time fact check fails the deploy if it's missing rather than restarting into a broker that won't start. See "Mosquitto MQTT broker passwords" and "Mosquitto TLS on :8883" below.
+- `mosquitto/` — host-specific (same gate). Mosquitto MQTT broker, TLS-only: native MQTT on `:8883` and MQTT-over-WebSocket on `:8884` (both `mqtt.eacs.io`), plus `mosquitto-clients` for testing it. The package's `/etc/mosquitto/mosquitto.conf` is used verbatim — verified byte-identical to the shipped conffile with `dpkg --verify mosquitto`, and worth re-checking before assuming so again — since all it does is set persistence/log defaults and `include_dir /etc/mosquitto/conf.d`. So the area manages one drop-in, `conf.d/egnor_mqtt.conf`: resource caps (including a 64 KiB `max_packet_size`, sized for embedded clients), `persistence false` (overriding the stock `persistence true`, because `conf.d/` is included last), and two password-authenticated TLS listeners. Restart rather than reload on change — the resource caps, `persistence`, `password_file`, and the TLS certs all reload on SIGHUP, but `listener` is documented as "Not reloaded on reload signal", so a SIGHUP would silently no-op a port change. Certs are *copies* under `/etc/mosquitto/certs/` refreshed by the `mosquitto-install-certs` certbot deploy hook, because mosquitto loads them after dropping privileges and can't read `/etc/letsencrypt`; the password file is out-of-band, and a build-time fact check fails the deploy if it's missing rather than restarting into a broker that won't start. See "Mosquitto MQTT broker passwords" and "Mosquitto TLS on :8883" below.
 - `user/` — per-user dotfiles, gated on `Os == "Linux"` (skips BSD, OS X, and other non-Linux). `setup.py` symlinks every leaf under `user/files-linux/` into the target's `$HOME`, plus `user/files-linux-modern/` on Ubuntu 20.04+ (tools whose prebuilt binaries need a recent glibc — mise conf.d, the LazyVim nvim config). `user/copy-files/` holds the few files that must be copied not linked (e.g. `.forward`). A "leaf" is a regular file, a symlink, or a directory containing `.git` (the latter two are linked as a unit, not recursed into). Probes `~/source/dotfiles` and `~/dotfiles` for an existing checkout (and clones to `~/dotfiles` otherwise).
 - `tweaks/` — root-owned `/etc` / systemd drop-ins, gated on facts (`LinuxName`, etc.) so the file is safe to run on any host — inapplicable tweaks just skip. Each tweak: `files.put` followed by `systemd.daemon_reload` + `systemd.service` chained via `_if=op.did_change` so reloads only happen on real changes. Also carries the udev rules for embedded dev (`tweaks/files/udev-*.rules`): sources are named for what they do, targets keep udev's numeric prefixes, and one `udevadm control --reload` fires if any changed. `udev-serial-rw.rules` is the general case (every `tty[A-Z]*` port 0666 plus the ModemManager ignore flags); `udev-platformio.rules` and `udev-odrive.rules` are verbatim upstream copies below a header, and each header has a one-line `diff` against the upstream URL to check for drift. `udev-totalphase.rules` is the vendor file minus its pre-2010 `SYSFS{}` lines, which current udev rejects. A reload only affects devices plugged in afterwards; re-plug or `udevadm trigger` anything already attached. Retired rules are removed by explicit `files.file(present=False)` ops rather than `files.sync(delete=True)`, so an unmigrated vendor rule on some other host survives until it is looked at.
 
@@ -126,11 +126,33 @@ decrypt) works there because the key is shared across a team; here it isn't.
 Revisit if the number of out-of-band secrets grows past the current four
 (`sasldb2`, the DKIM `.private` keys, `/etc/postsrsd.secret`, this file).
 
-## Mosquitto TLS on :8883
+## Mosquitto TLS on :8883 (and wss on :8884)
 
-The broker is TLS-only. Clients connect to **`mqtt.eacs.io:8883`** and
-authenticate with a username/password from the file above. There is no
-plaintext `:1883` listener — there was one, on all interfaces, until 2026-09.
+The broker is TLS-only, on two listeners that share one cert and one password
+file:
+
+| port | URL scheme | for |
+| --- | --- | --- |
+| 8883 | `mqtts://mqtt.eacs.io:8883` | native MQTT: embedded devices, `mosquitto_*` tools |
+| 8884 | `wss://mqtt.eacs.io:8884` | MQTT over WebSocket: browsers, other WebSocket-only clients |
+
+Clients authenticate with a username/password from the file above on either
+port. There is no plaintext `:1883` (or `ws://`) listener — there was a `:1883`
+one, on all interfaces, until 2026-09. 8884 is the conventional neighbor of
+8883 for wss; 443 would be friendlier to captive networks but belongs to nginx,
+and proxying through it would couple the broker to the web config for no
+current need.
+
+`allow_anonymous` and `password_file` are global settings (the stock
+`per_listener_settings false`), so they are stated once; `certfile`/`keyfile`
+are per-listener and so are repeated under each `listener`. Adding a listener
+needs a restart, not a reload — see `mosquitto/` in "Layout".
+
+`max_packet_size 65536` is a broker-wide cap: a PUBLISH larger than that is
+rejected at the broker (MQTT v5 clients get a "Packet too large" reason code,
+v3.1.1 clients are disconnected) rather than delivered to subscribers whose
+receive buffers can't hold it. Raise it if a legitimate payload ever needs more,
+but the embedded clients are the reason it's small.
 
 The cert is the shared `competent.services` letsencrypt lineage (the same one
 nginx serves for eacs.io and friends), expanded to carry `mqtt.eacs.io`.
@@ -184,6 +206,18 @@ mosquitto_sub -h mqtt.eacs.io -p 8883 --capath /etc/ssl/certs \
     -u <user> -P <pass> -t 'test/#' -v
 mosquitto_pub -h mqtt.eacs.io -p 8883 --capath /etc/ssl/certs \
     -u <user> -P <pass> -t 'test/hello' -m hi
+```
+
+The `mosquitto_*` clients cannot test the WebSocket listener: libmosquitto
+only speaks WebSocket on the broker side. Short of a browser or a paho client,
+check that the port upgrades and offers the `mqtt` subprotocol with a raw
+handshake (want `101 Switching Protocols` and `Sec-WebSocket-Protocol: mqtt`):
+
+```
+curl -sv --max-time 5 --http1.1 -o /dev/null https://mqtt.eacs.io:8884/ \
+    -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+    -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' \
+    -H 'Sec-WebSocket-Protocol: mqtt' 2>&1 | grep -E '^< (HTTP|Sec-WebSocket)'
 ```
 
 Omitting `--capath`/`--cafile` makes the client skip verification, which hides
