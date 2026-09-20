@@ -1,0 +1,4 @@
+# Managed by pyinfra. Source: dotfiles/tweaks/files/sudo-egnor-nopasswd
+#
+# Passwordless sudo for egnor only. (Overrides the stock rule for this user.)
+egnor ALL=(ALL:ALL) NOPASSWD: ALL

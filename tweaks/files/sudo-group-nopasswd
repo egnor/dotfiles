@@ -1,2 +1,0 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/sudo-group-nopasswd
-%sudo ALL=(ALL:ALL) NOPASSWD: ALL
