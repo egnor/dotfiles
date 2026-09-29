@@ -36,8 +36,9 @@ sites    1h CNAME ghs.google.com.
 go 1h A 52.21.33.16
 go 1h A 52.2.56.64
 
+; slack archive, owned by Wei-Hwa
+slackarchive 1h A 104.200.25.107
+
 ; puzzletron, including mailgun.com email-sending on a sub-selector
 ptron                1h CNAME ptron.isotropic.org.
 krs._domainkey.ptron 1h TXT   "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrpFPiRiLMyu0NWDog3L2v/haiJAPSXjYZUOfsdBxjwU2/ILOVoRhAGK1FQARVmO2etgt5CkKsf7PbbDFDs1B1Urs646LoyoPAKBbWJVvMdSwiLx8Jx62JtdiOaFXaE2J7pSK+dr7Lm9xHxMJiYBSUZlHz4+g7AzRbognL3RTjtQIDAQAB"
-
-slackarchive  IN  A  104.200.25.107
