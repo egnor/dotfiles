@@ -8,7 +8,7 @@ uv = "0.13"
 "github:jesseduffield/lazygit" = "0.64.1"
 "github:sharkdp/fd" = "10.5.0"            # lazyvim plugins like this
 "github:zellij-org/zellij" = "0.45"
-"pypi:grip" = "4.6.1"
+"pypi:grip" = "4.6.2"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "python"]
