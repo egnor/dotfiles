@@ -44,3 +44,4 @@ ptron                1h CNAME ptron.isotropic.org.
 krs._domainkey.ptron 1h TXT   "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrpFPiRiLMyu0NWDog3L2v/haiJAPSXjYZUOfsdBxjwU2/ILOVoRhAGK1FQARVmO2etgt5CkKsf7PbbDFDs1B1Urs646LoyoPAKBbWJVvMdSwiLx8Jx62JtdiOaFXaE2J7pSK+dr7Lm9xHxMJiYBSUZlHz4+g7AzRbognL3RTjtQIDAQAB"
 ranger                  IN  CNAME  hzq9xs44.up.railway.app.
 _railway-verify.ranger  IN  TXT    "railway-verify=3011fd83e4b63850f3c426dd7d269a3426540027396c8ae1c4156b4557287af7"
+@  IN  TXT  "google-site-verification=zmC6DKbbTGdF2hTbz_3Rpuomm1KXKwlVIExtXCHAUn8"
