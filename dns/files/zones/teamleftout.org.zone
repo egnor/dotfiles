@@ -19,12 +19,12 @@ $INCLUDE /etc/knot/zones/_common.inc
 @ 1h MX 30 aspmx4.googlemail.com.
 @ 1h MX 30 aspmx5.googlemail.com.
 
+; email policy
 @ 1h TXT "v=spf1 a include:_spf.google.com ~all"
+_dmarc 1h TXT "v=DMARC1; p=quarantine; pct=100; rua=mailto:re+ybuydbtiybc@dmarc.postmarkapp.com; sp=none; aspf=r;"
 
-; DMARC — start at p=none for observation since multiple flows publish
-; under this zone (Google Workspace at the apex, Mailgun via ptron).
-; Reports go to Postmark; ramp to p=quarantine once they look clean.
-_dmarc 1h TXT "v=DMARC1; p=none; pct=100; rua=mailto:re+ybuydbtiybc@dmarc.postmarkapp.com; sp=none; aspf=r;"
+; Google Search Console verification (contact: schraith@gmail.com)
+@ 1h TXT "google-site-verification=zmC6DKbbTGdF2hTbz_3Rpuomm1KXKwlVIExtXCHAUn8"
 
 ; Google Workspace per-service hostnames (Gmail, Calendar, Docs, Sites)
 calendar 1h CNAME ghs.google.com.
@@ -42,6 +42,7 @@ slackarchive 1h A 104.200.25.107
 ; puzzletron, including mailgun.com email-sending on a sub-selector
 ptron                1h CNAME ptron.isotropic.org.
 krs._domainkey.ptron 1h TXT   "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrpFPiRiLMyu0NWDog3L2v/haiJAPSXjYZUOfsdBxjwU2/ILOVoRhAGK1FQARVmO2etgt5CkKsf7PbbDFDs1B1Urs646LoyoPAKBbWJVvMdSwiLx8Jx62JtdiOaFXaE2J7pSK+dr7Lm9xHxMJiYBSUZlHz4+g7AzRbognL3RTjtQIDAQAB"
-ranger                  IN  CNAME  hzq9xs44.up.railway.app.
-_railway-verify.ranger  IN  TXT    "railway-verify=3011fd83e4b63850f3c426dd7d269a3426540027396c8ae1c4156b4557287af7"
-@  IN  TXT  "google-site-verification=zmC6DKbbTGdF2hTbz_3Rpuomm1KXKwlVIExtXCHAUn8"
+
+; Penny Park Ranger deployment for Left Out
+ranger                 1h CNAME hzq9xs44.up.railway.app.
+_railway-verify.ranger 1h TXT   "railway-verify=3011fd83e4b63850f3c426dd7d269a3426540027396c8ae1c4156b4557287af7"
