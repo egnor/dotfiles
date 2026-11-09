@@ -12,8 +12,8 @@ local.include("mosquitto/setup.py")
 local.include("netdata/setup.py")
 local.include("nginx/setup.py")
 local.include("opendkim/setup.py")
-local.include("tweaks/setup.py")
-local.include("user/setup.py")
+local.include("unix-system/setup.py")
+local.include("unix-user/setup.py")
 
 local.include("postsrsd/setup.py")  # must come before postfix
 local.include("postfix/setup.py")

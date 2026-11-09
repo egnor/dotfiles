@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-platformio.rules
+# Managed by pyinfra. Source: dotfiles/unix-system/files/udev.rules.d/99-egnor-platformio.rules
 # Original: https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/system/99-platformio-udev.rules
 # (See: https://docs.platformio.org/en/latest/core/installation/udev-rules.html)
 

@@ -1,5 +1,5 @@
-# Root-owned system tweaks that egnor likes.
-# Tweaks are gated on facts so this file is safe to run on any target — the
+# Root-owned Linux system tweaks that egnor likes.
+# Changes are gated on facts so this file is safe to run on any target — the
 # inapplicable ones simply skip.
 
 from pyinfra import host
@@ -39,7 +39,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     if host.get_fact(Directory, path="/etc/sudoers.d"):
         files.sync(
             name="sudoers.d",
-            src="tweaks/files/sudoers.d",
+            src="unix-system/files/sudoers.d",
             dest="/etc/sudoers.d",
             mode="644",  # sudo refuses files writable by group/other
             dir_mode="755",
@@ -47,11 +47,11 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
             _sudo=True,
         )
 
-    # apt policy tweaks.
+    # apt sources and policy tweaks.
     if host.get_fact(Directory, path="/etc/apt"):
         files.sync(
             name="apt",
-            src="tweaks/files/apt",
+            src="unix-system/files/apt",
             dest="/etc/apt",
             mode="644",
             dir_mode="755",
@@ -63,7 +63,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     if "packagekit.service" in host.get_fact(SystemdEnabled):
         packagekit_update = files.sync(
             name="packagekit.service.d",
-            src="tweaks/files/packagekit.service.d",
+            src="unix-system/files/packagekit.service.d",
             dest="/etc/systemd/system/packagekit.service.d",
             mode="644",
             dir_mode="755",
@@ -88,7 +88,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     if host.get_fact(Directory, path="/etc/udev/rules.d"):
         udev_update = files.sync(
             name="udev/rules.d",
-            src="tweaks/files/udev.rules.d",
+            src="unix-system/files/udev.rules.d",
             dest="/etc/udev/rules.d",
             mode="644",
             dir_mode="755",
@@ -107,7 +107,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     if host.get_fact(Hostname) == "egnor-2020":
         sshd_update = files.sync(
             name="sshd_config.d",
-            src="tweaks/files/sshd_config.d",
+            src="unix-system/files/sshd_config.d",
             dest="/etc/ssh/sshd_config.d",
             mode="644",
             dir_mode="755",
@@ -139,7 +139,7 @@ if host.get_fact(LinuxName) in ("Ubuntu", "Debian"):
     ):
         files.put(
             name="logrotate.d/cloud-init",
-            src="tweaks/files/logrotate.d/cloud-init",
+            src="unix-system/files/logrotate.d/cloud-init",
             dest="/etc/logrotate.d/cloud-init",
             mode="644",
             _sudo=True,

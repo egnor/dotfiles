@@ -1,4 +1,4 @@
-# Emptied by pyinfra (tweaks/). See tweaks/setup.py.
+# Emptied by pyinfra. Source: dotfiles/unix-system/files/logrotate.d/cloud-init
 #
 # After Ubuntu split the cloud-init package into cloud-init + cloud-init-base,
 # BOTH /etc/logrotate.d/cloud-init and /etc/logrotate.d/cloud-init-base shipped

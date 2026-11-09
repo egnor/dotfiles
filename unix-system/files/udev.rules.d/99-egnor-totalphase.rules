@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-totalphase.rules
+# Managed by pyinfra. Source: dotfiles/unix-system/files/udev.rules.d/99-egnor-totalphase.rules
 # Original: Total Phase vendor download (supposedly at totalphase.com)
 
 # Aardvark I2C/SPI Host Adapter

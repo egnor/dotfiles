@@ -1,4 +1,4 @@
-// Managed by pyinfra. Source: dotfiles/tweaks/files/mozilla-unattended-upgrades.conf
+// Managed by pyinfra. Source: dotfiles/unix-system/files/apt/apt.conf.d/51-egnor-unattended-upgrades-mozilla
 //
 // apt's preferences.d pin makes interactive `apt install firefox` pull from
 // packages.mozilla.org. unattended-upgrades has its OWN origin allowlist that

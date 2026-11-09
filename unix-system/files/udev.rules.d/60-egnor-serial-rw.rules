@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-brltty-disable.rules
+# Managed by pyinfra. Source: dotfiles/unix-system/files/udev-rules.d/60-egnor-serial-rw.rules
 #
 # Empty override for /usr/lib/udev/rules.d/85-brltty.rules
 # (udev gives same-named files in /etc/udev/rules.d/ precedence).

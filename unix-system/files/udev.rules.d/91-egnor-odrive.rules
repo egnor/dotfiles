@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/udev-odrive.rules
+# Managed by pyinfra. Source: dotfiles/unix-system/files/udev.rules.d/91-egnor-odrive.rules
 # Original: https://cdn.odriverobotics.com/files/odrive-udev-rules.rules
 # (See: https://docs.odriverobotics.com/v/latest/interfaces/odrivetool.html)
 

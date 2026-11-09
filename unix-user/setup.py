@@ -47,7 +47,7 @@ def link_tree(tree, repo_on_host):
         files.link(
             name=f"{tree}/{rel}",
             path=f"{home_on_host}/{rel}",
-            target=f"{repo_on_host}/user/{tree}/{rel}",
+            target=f"{repo_on_host}/unix-user/{tree}/{rel}",
             create_remote_dir=True,
         )
 
@@ -58,7 +58,9 @@ def link_tree(tree, repo_on_host):
 # Generalise if/when we get there.
 if host.get_fact(Os) == "Linux":
     # Some files must be copied, not linked to work (eg. .forward)
-    files.sync(src="user/copy-files", dest=host.get_fact(Home), delete=False)
+    files.sync(
+        src="unix-user/copy-files", dest=host.get_fact(Home), delete=False
+    )
 
     # For other files, make symlinks so any edits are made to the repo
     repo_on_host, repo_op = setup_repo_on_host()
@@ -66,7 +68,7 @@ if host.get_fact(Os) == "Linux":
 
     # "Modern" Linux hosts (Ubuntu 20.04+) additionally get tools whose prebuilt
     # binaries need a recent glibc — see
-    # user/files-linux-modern/.config/mise/conf.d/.
+    # unix-user/files-linux-modern/.config/mise/conf.d/.
     lsb = host.get_fact(LsbRelease) or {}
     if lsb.get("id") == "Ubuntu":
         if int(lsb.get("release", "").split(".")[0]) >= 20:

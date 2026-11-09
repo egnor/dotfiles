@@ -1,0 +1,9 @@
+# Managed by pyinfra. Source: dotfiles/unix-system/files/apt/preferences.d/egnor-mozilla-pin
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+
+# Belt-and-suspenders: never install Ubuntu's transitional firefox deb at all.
+Package: firefox*
+Pin: release o=Ubuntu
+Pin-Priority: -1

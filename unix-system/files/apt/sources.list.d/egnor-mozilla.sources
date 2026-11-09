@@ -1,4 +1,4 @@
-# Managed by pyinfra. Source: dotfiles/tweaks/files/mozilla-apt-source.sources
+# Managed by pyinfra. Source: dotfiles/unix-system/files/apt/sources.list.d/mozilla-apt-source.sources
 Types: deb
 URIs: https://packages.mozilla.org/apt/
 Suites: mozilla
